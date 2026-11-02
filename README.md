@@ -403,6 +403,8 @@ officeace2api/
 
 ## 八、更多
 
+- **[Releases](https://github.com/Q-shuang-dot/officeace2api/releases)** —— 每个版本自动附带
+  `officeace2api-vX.Y.Z.zip` + `SHA256SUMS.txt`；解压后直接跑，不用 `git clone`。
 - **[docs/技术笔记.md](docs/技术笔记.md)** —— 实现原理、OAuth/PKCE 链路、
   DPAPI 解密、V11-HMAC-SHA256 签名、推理模型 token 预算、踩过的坑，都在这里。
 - `npm test` —— 全量纯测试（24 个脚本，干净 clone 可跑；不碰真实服务）

@@ -1,0 +1,60 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to package (for example v1.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Build source zip
+        shell: bash
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          name="officeace2api-${TAG}"
+          mkdir -p dist
+          git archive --format=zip --prefix="${name}/" -o "dist/${name}.zip" HEAD
+
+          # 只发源码，不发运行期状态；万一以后有人误提交了也必须在这里挡住
+          if unzip -Z1 "dist/${name}.zip" | grep -E '(^|/)(data|logs)/|(^|/)config\.json$|(^|/)\.env($|\.)'; then
+            echo "发布包里混进了运行期文件，已中止" >&2
+            exit 1
+          fi
+          for f in start.cmd src/index.mjs package.json; do
+            unzip -Z1 "dist/${name}.zip" | grep -qx "${name}/${f}" || {
+              echo "发布包缺少 ${f}" >&2
+              exit 1
+            }
+          done
+
+          (cd dist && sha256sum "${name}.zip" > SHA256SUMS.txt)
+          ls -lh dist
+
+      - name: Publish release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          gh release upload "$TAG" dist/*.zip dist/SHA256SUMS.txt --clobber

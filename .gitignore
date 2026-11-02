@@ -42,6 +42,9 @@ data/instance.lock
 # 依赖（本项目零依赖，留着防手滑）
 node_modules/
 
+# 本地打包产物（CI 在 runner 的 dist/ 里生成，不进仓库）
+dist/
+
 # 编辑器 / 系统
 .vscode/
 .idea/

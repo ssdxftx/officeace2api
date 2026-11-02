@@ -382,6 +382,8 @@ officeace2api/
 
 ## 8. More
 
+- **[Releases](https://github.com/Q-shuang-dot/officeace2api/releases)** — each version ships an
+  `officeace2api-vX.Y.Z.zip` plus `SHA256SUMS.txt`; unzip and run, no `git clone` needed.
 - **[docs/技术笔记.md](docs/技术笔记.md)** (Chinese) — implementation details, the OAuth/PKCE
   chain, DPAPI decryption, V11-HMAC-SHA256 signing, the reasoning-model token budget, and the
   pitfalls encountered along the way.
