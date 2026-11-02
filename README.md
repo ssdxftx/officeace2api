@@ -89,6 +89,9 @@ git clone https://github.com/Q-shuang-dot/officeace2api.git
 cd officeace2api
 ```
 
+不想用 git 也行：从 [Releases](https://github.com/Q-shuang-dot/officeace2api/releases) 下载
+`officeace2api-vX.Y.Z.zip`，解压后同样双击 `start.cmd`。
+
 第一次启动会自动生成 `config.json` 和 `data\` 目录，不用手工建。
 
 ### 3. 启动

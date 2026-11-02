@@ -87,6 +87,10 @@ git clone https://github.com/Q-shuang-dot/officeace2api.git
 cd officeace2api
 ```
 
+Don't want to use git? Download `officeace2api-vX.Y.Z.zip` from
+[Releases](https://github.com/Q-shuang-dot/officeace2api/releases), unzip it, and double-click
+`start.cmd`.
+
 The first start generates `config.json` and the `data\` directory automatically.
 
 ### 2.3 Start
