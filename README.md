@@ -2,11 +2,17 @@
 
 **简体中文** | [English](README.en.md)
 
+[![tests](https://github.com/Q-shuang-dot/officeace2api/actions/workflows/tests.yml/badge.svg)](https://github.com/Q-shuang-dot/officeace2api/actions/workflows/tests.yml)
+[![release](https://img.shields.io/github/v/release/Q-shuang-dot/officeace2api)](https://github.com/Q-shuang-dot/officeace2api/releases)
+
 > 本项目在 [LINUX DO](https://linux.do) 社区发布与交流，感谢佬友支持。
 
 把一个模型网关反代成一整套标准 **OpenAI 兼容 API**，并自带一个中文控制台。
 
 **零依赖** —— 只用 Node.js 内置模块，不用 `npm install`。
+
+> **30 秒启动（Windows）**：`git clone` 本仓库 → 双击 `start.cmd` → 打开
+> `http://127.0.0.1:7864/admin`。首次启动会自动生成面板口令，详见「二、快速开始」。
 
 > 💡 **账号来源**：面板里「换个账号登录」自己就能完成授权（PKCE + 华为云回调 + DPoP 换 token，
 > 全在 `src/oauth.mjs` 里实现），**不需要装桌面端**。装了 **OfficeAce 桌面端**（华为云 DevEco
@@ -242,7 +248,7 @@ DPoP 私钥、续期链（含已作废 token 的黑名单）、别名、启停�
 
 ## 五、必须装 OfficeAce 客户端吗？
 
-**加号不需要。** 只有两件事需要桌面端：自动抠本机已有账号的凭据、以及老的「一键授权」入口
+**加账号不需要。** 只有两件事需要桌面端：自动抠本机已有账号的凭据、以及老的「一键授权」入口
 （`/admin/api/auth/*`，注册流水线的自动授权也复用它）。
 
 | 你的情况 | 要 OfficeAce 桌面端吗 | 要做什么 |
@@ -399,7 +405,8 @@ officeace2api/
 
 - **[docs/技术笔记.md](docs/技术笔记.md)** —— 实现原理、OAuth/PKCE 链路、
   DPAPI 解密、V11-HMAC-SHA256 签名、推理模型 token 预算、踩过的坑，都在这里。
-- `node tools/smoke-test.mjs` —— 端到端自测
+- `npm test` —— 全量纯测试（24 个脚本，干净 clone 可跑；不碰真实服务）
+- `npm run test:integration -- --base http://127.0.0.1:7864` —— 面板接口 + 端到端冒烟（会改测试实例的配置）
 - `node tools/test-routing.mjs` —— 路由纯函数（7 项：显式会话 ID / system 变化不破黏性 /
   Retry-After 秒数与 HTTP 日期）
 - `node tools/test-http-utils.mjs` —— HTTP 头与请求 ID（7 项：SSE 不写假 `Server-Timing` /
@@ -413,7 +420,7 @@ officeace2api/
 - `node tools/test-usage-cache.mjs` —— 缓存 token 统计（5 项）
 - `node tools/test-call-diagnostics.mjs` —— 失败调用诊断字段（9 项：请求 ID / 错误码 /
   HTTP 状态 / 重试链 / 落盘后仍可读）
-- `node tools/test-admin.mjs` —— 控制台接口自测（含配置卫生：死配置检测、
+- `node tools/test-admin.mjs --base http://127.0.0.1:7864` —— 控制台接口自测（**集成测试，必须显式给测试实例**；含配置卫生：死配置检测、
   日志时间用本机时区、周期发现只在变化时说话、面板轮询后台停打、口令换 Cookie、
   上游错误体装在 SSE 帧里也要能解析出 `code`/`message`、面板载荷不许把 `usage.recent`
   整份重复装一遍、日志增量接口只回新行）

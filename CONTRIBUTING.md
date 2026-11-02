@@ -90,12 +90,15 @@ node src/index.mjs
 
 ## 三、提交前必须做的自测
 
-本项目的测试脚本全在 `tools/` 下，**不依赖任何测试框架**，直接 `node` 跑：
+本项目的测试脚本全在 `tools/` 下，**不依赖任何测试框架**，直接 `node` 跑。
+
+默认 `npm test` 只跑**不需要真实服务**的纯测试（会自动跳过 `test-admin` / `smoke-test`）：
 
 | 命令 | 测什么 |
 |---|---|
-| `node tools/smoke-test.mjs` | 端到端冒烟：起服务 → 发请求 → 验证响应 |
-| `node tools/test-admin.mjs` | 控制台接口（284 项） |
+| `npm test` | 全量纯测试（推荐，干净 clone 也能跑） |
+| `npm run test:integration -- --base http://127.0.0.1:7864` | 集成测试：面板接口 + 端到端冒烟，**会改测试实例的配置** |
+| `node tools/test-admin.mjs --base http://127.0.0.1:7864` | 控制台接口（284 项，必须显式指定测试实例） |
 | `node tools/test-max-tokens.mjs` | 推理预算改写规则（47 项单元测试） |
 | `node tools/test-model-probe.mjs` | 模型可用性探测（41 项单元测试） |
 | `node tools/test-free-port.mjs` | 启动前的端口清理（8 项，真起进程：死占用要清、健康实例不许动、保留端口范围要解释） |
@@ -109,8 +112,8 @@ node src/index.mjs
 | `node tools/diag-admin-auth.mjs` | 面板鉴权（无口令 / 对口令 / 错口令 / `?token=`） |
 | `node tools/diag-local-daily.mjs` | 七个菜单的真实接口 + 面板调的路径是否都存在 |
 
-**改了哪块就至少跑对应用例。** 涉及面板的改动，`test-admin.mjs` 和
-`diag-local-daily.mjs` 必须跑通。
+**改了哪块就至少跑对应用例。** 涉及面板的改动，先在测试实例上跑
+`npm run test:integration -- --base http://127.0.0.1:7864`，再跑 `diag-local-daily.mjs`。
 
 > ⚠️ **新增文件记得先 `git add`。** `diag-fresh-clone.mjs` 是用 `git ls-files` 精确模拟
 > `git clone` 的，未跟踪的文件不在它的清单里 —— 于是"本机能跑"和"别人 clone 下来能跑"

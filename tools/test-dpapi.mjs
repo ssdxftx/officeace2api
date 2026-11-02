@@ -37,6 +37,11 @@ function bad(name, extra) {
 }
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+if (process.platform !== 'win32') {
+  console.log('SKIP: DPAPI 只在 Windows 上可用，非 Windows 环境跳过');
+  process.exit(2);
+}
+
 const PS = `${process.env.SystemRoot || 'C:\\Windows'}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'o2a-dpapi-'));
 const write = (name, text) => {

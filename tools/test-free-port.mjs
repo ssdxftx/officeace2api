@@ -61,6 +61,10 @@ function bad(name, extra) {
 
 // Windows 上必须用 powershell.exe（5.1）跑，因为调用方就是它，
 // 而 free-port.ps1 是存成 UTF-8 带 BOM 给 5.1 读的。
+if (process.platform !== 'win32') {
+  console.log('SKIP: free-port 的回归链路依赖 Windows PowerShell，非 Windows 环境跳过');
+  process.exit(2);
+}
 const PS = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
 
 /** 跑一次 free-port.ps1，返回 { code, out } */

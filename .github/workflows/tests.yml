@@ -18,19 +18,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # 这些是纯 Node、无桌面端依赖的回归资产，CI 里先跑它们。
-      # 需要真实 OfficeAce 凭据 / 本机端口的 test-admin、smoke 等留给本机。
-      - name: unit tests
+      # 纯 Node 回归资产；集成测试（test-admin/smoke）要显式 --base，不在 CI 里打真实服务。
+      - name: syntax check
         shell: bash
         run: |
-          node tools/test-pool-scheduler.mjs
-          node tools/test-pool-persistence.mjs
-          node tools/test-usage-cache.mjs
-          node tools/test-usage-daily.mjs
-          node tools/test-call-diagnostics.mjs
-          node tools/test-routing.mjs
-          node tools/test-http-utils.mjs
-          node tools/test-stream-e2e.mjs
-          node tools/test-logfmt.mjs
-          node tools/test-tps.mjs
-          node tools/test-models.mjs
+          git ls-files '*.mjs' | while IFS= read -r f; do
+            node --check "$f"
+          done
+      - name: unit tests
+        shell: bash
+        run: npm test

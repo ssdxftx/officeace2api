@@ -1,10 +1,16 @@
 # officeace2api
 
+[![tests](https://github.com/Q-shuang-dot/officeace2api/actions/workflows/tests.yml/badge.svg)](https://github.com/Q-shuang-dot/officeace2api/actions/workflows/tests.yml)
+[![release](https://img.shields.io/github/v/release/Q-shuang-dot/officeace2api)](https://github.com/Q-shuang-dot/officeace2api/releases)
+
 > Published and discussed in the [LINUX DO](https://linux.do) community.
 
 Turn a model gateway into a full **OpenAI-compatible API** with a built-in web console.
 
 **Zero dependencies** — Node.js built-in modules only. No `npm install` needed.
+
+> **30-second start (Windows):** `git clone` this repo → double-click `start.cmd` → open
+> `http://127.0.0.1:7864/admin`. The first launch generates the admin token; see "2. Quick start".
 
 > 💡 **Accounts**: you can sign in from the console and the account enters the pool on its own —
 > no desktop client required (`src/oauth.mjs` does the whole PKCE + cloud-callback + DPoP flow).
@@ -379,8 +385,9 @@ officeace2api/
 - **[docs/技术笔记.md](docs/技术笔记.md)** (Chinese) — implementation details, the OAuth/PKCE
   chain, DPAPI decryption, V11-HMAC-SHA256 signing, the reasoning-model token budget, and the
   pitfalls encountered along the way.
-- `node tools/smoke-test.mjs` — end-to-end self-test
-- `node tools/test-admin.mjs` — console API self-test (223 cases)
+- `npm test` — full hermetic test suite (24 scripts, works on a clean clone; no live service)
+- `npm run test:integration -- --base http://127.0.0.1:7864` — admin API + end-to-end smoke test (mutates the test instance)
+- `node tools/test-admin.mjs --base http://127.0.0.1:7864` — console API self-test (integration test; explicit target required)
 - `node tools/test-account-bundle.mjs` — the move-to-a-new-computer bundle (76 cases, all in a
   temp dir: encryption round-trip / wrong passphrase and tampering must fail / refresh-chain merge
   rules / re-importing on the source machine must not create a second identity / only the newest 3

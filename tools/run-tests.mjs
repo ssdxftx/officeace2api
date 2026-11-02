@@ -3,22 +3,26 @@
  * 回归测试入口（零依赖，仅 Node 内置模块）
  *
  *   node tools/run-tests.mjs [--only=<子串>] [--timeout=<秒>] [--list]
+ *   node tools/run-tests.mjs --integration --base http://127.0.0.1:7864
+ *
+ * 默认只跑**不需要真实服务**的单元测试；`test-admin.mjs` / `smoke-test.mjs`
+ * 会打真实实例、改配置，归为集成测试，必须显式 `--integration --base`。
  *
  * 自动发现并执行：
  *   - tools/test-*.mjs      （回归资产）
- *   - tools/smoke-test.mjs  （端到端冒烟）
+ *   - tools/smoke-test.mjs  （端到端冒烟，仅集成模式）
  * 按文件名排序，串行执行，逐个打印名称 / 退出码 / 耗时。
  *
  * 结果分三类：
  *   PASS    退出码 0
  *   FAIL    退出码非 0（超时也计入 FAIL）
  *   SKIP    脚本自己声明「本环境跑不了」——退出码 2，或输出里出现明确的
- *           SKIP / 跳过 标记。SKIP 会连同原因在汇总里显式列出，不会被吞掉。
+ *           `SKIP:` / `[SKIP]` 标记。SKIP 会连同原因在汇总里显式列出，不会被吞掉。
  *
  * 退出码：全部 PASS 或 SKIP → 0；任一 FAIL → 1。
  *
  * 约定：脚本若因缺少真实网络 / 桌面端 / 凭据而无法运行，请用「退出码 2」或
- * 打印 `SKIP: <原因>` 声明，而不要伪装成 PASS。
+ * 打印 `SKIP: <原因>` 声明，而不要伪装成 PASS。普通日志里的「跳过」不算。
  */
 
 import { spawn } from 'node:child_process';
@@ -31,6 +35,7 @@ const TOOLS = path.join(ROOT, 'tools');
 
 const DEFAULT_TIMEOUT_SEC = 300;
 const SKIP_EXIT_CODE = 2;
+const LIVE_TESTS = new Set(['test-admin.mjs', 'smoke-test.mjs']);
 
 // 用「当前这个 node」本身去跑子脚本，而不是 PATH 里的 `node`。
 // 这台机器上 PATH 的解析顺序会把 `node` 指到旧版本（nvm 的 v14），
@@ -49,8 +54,17 @@ const opt = (name) => {
 
 const only = opt('--only') ?? '';
 const listOnly = argv.includes('--list');
+const integrationOnly = argv.includes('--integration');
+const all = argv.includes('--all');
+const base = opt('--base') ?? process.env.O2A_BASE ?? '';
 const timeoutRaw = opt('--timeout');
 const timeoutSec = timeoutRaw === undefined ? DEFAULT_TIMEOUT_SEC : Number(timeoutRaw);
+
+if ((integrationOnly || all) && !base && !listOnly) {
+  console.error('集成测试需要显式指定服务地址，例如：');
+  console.error('  node tools/run-tests.mjs --integration --base http://127.0.0.1:7864');
+  process.exit(SKIP_EXIT_CODE);
+}
 
 if (!Number.isFinite(timeoutSec) || timeoutSec <= 0) {
   console.error(`--timeout 需要正数秒，收到: ${timeoutRaw}`);
@@ -71,6 +85,11 @@ function discover() {
     .map((e) => e.name)
     .filter((n) => n === 'smoke-test.mjs' || (/^test-.*\.mjs$/.test(n)))
     .filter((n) => (only ? n.includes(only) : true))
+    .filter((n) => {
+      if (integrationOnly) return LIVE_TESTS.has(n);
+      if (all) return true;
+      return !LIVE_TESTS.has(n);
+    })
     .sort((a, b) => a.localeCompare(b, 'en'));
   return names.map((n) => ({ name: n, file: path.join(TOOLS, n) }));
 }
@@ -92,9 +111,7 @@ if (listOnly) {
 const SKIP_HINTS = [
   /^\s*SKIP\b/im,
   /^\s*\[SKIP\]/im,
-  /\bSKIPPED\b/i,
-  /跳过/,
-  /已跳过/,
+  /^\s*SKIPPED\b/im,
 ];
 
 /**
@@ -118,7 +135,9 @@ function skipReason(exitCode, output) {
 function runOne(test) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const child = spawn(NODE, ['--no-warnings', test.file], {
+    const childArgs = ['--no-warnings', test.file];
+    if (LIVE_TESTS.has(test.name) && base) childArgs.push('--base', base);
+    const child = spawn(NODE, childArgs, {
       cwd: ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', CI: '1' },

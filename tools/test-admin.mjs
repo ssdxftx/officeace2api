@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
  * 面板接口自测：把后台页面依赖的接口全打一遍
- *   node tools/test-admin.mjs [--base http://127.0.0.1:7864]
+ *   node tools/test-admin.mjs --base http://127.0.0.1:7864
+ *
+ * 这是**集成测试**，会改配置/别名/日志级别，所以必须显式给出要测的实例地址，
+ * 不能像以前那样默认打 127.0.0.1:7864 —— 否则开发机上有服务在跑时，
+ * `npm test` 会直接改到真实实例。
  *
  * 面板接口现在要口令了（服务首次启动会自动生成 `admin.token`），
  * 所以这里统一从 `tools/adminToken.mjs` 拿 —— 它按
@@ -11,7 +15,11 @@ import { adminHeaders, resolveAdminToken, describeAdminToken } from './adminToke
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => (argv.indexOf(n) >= 0 ? argv[argv.indexOf(n) + 1] : d);
-const base = opt('--base', 'http://127.0.0.1:7864');
+const base = (opt('--base', process.env.O2A_BASE || '') || '').replace(/\/+$/, '');
+if (!base) {
+  console.log('SKIP: 这是集成测试，需要显式指定 --base（或 O2A_BASE）指向一个测试实例');
+  process.exit(2);
+}
 
 let pass = 0;
 let fail = 0;
@@ -22,6 +30,9 @@ const ok = (m, extra = '') => {
 const bad = (m, e) => {
   fail += 1;
   console.log(`  ✗ ${m}  ${e}`);
+};
+const note = (m) => {
+  console.log(`  · ${m}`);
 };
 
 async function call(path, { method = 'GET', body, key } = {}) {

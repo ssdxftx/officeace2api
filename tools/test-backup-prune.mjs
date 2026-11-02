@@ -140,10 +140,21 @@ try {
   check('清理动作打出来了', /清理\s+: 删掉 3 份旧备份/.test(out4), (out4.match(/清理[^\n]*/) || ['(没有)'])[0]);
   check('假账号真的写进盘了', 'fake-acct:fake-user' in JSON.parse(fs.readFileSync(path.join(SIM, 'data', 'oauth-accounts.json'), 'utf8')));
 
-  // 真目录一个字节都不许动
-  const realBefore = fs.readFileSync(path.join(ROOT, 'data', 'accounts.json'), 'utf8');
-  check('本机 data/accounts.json 没被改', realBefore === fs.readFileSync(path.join(ROOT, 'data', 'accounts.json'), 'utf8'));
-  check('本机 data/ 没多出 import-backup', fs.readdirSync(path.join(ROOT, 'data')).filter((x) => x.startsWith('import-backup-')).length === 0);
+  // 真目录一个字节都不许动。
+  // 干净 clone 里没有 data/accounts.json（只有 data/.gitkeep），旧写法直接读会 ENOENT ——
+  // 这正是这条用例以前只能在“本机跑过服务”的机器上通过的原因。
+  const realDataDir = path.join(ROOT, 'data');
+  const realAccountsFile = path.join(realDataDir, 'accounts.json');
+  const realBefore = fs.existsSync(realAccountsFile) ? fs.readFileSync(realAccountsFile) : null;
+  const realAfter = fs.existsSync(realAccountsFile) ? fs.readFileSync(realAccountsFile) : null;
+  check(
+    '本机 data/accounts.json 没被改',
+    realBefore === null ? realAfter === null : realAfter !== null && realBefore.equals(realAfter),
+  );
+  const realImportBackups = fs.existsSync(realDataDir)
+    ? fs.readdirSync(realDataDir).filter((x) => x.startsWith('import-backup-'))
+    : [];
+  check('本机 data/ 没多出 import-backup', realImportBackups.length === 0, JSON.stringify(realImportBackups));
   check('本机 accounts-backup/ 没被创建', !fs.existsSync(path.join(ROOT, 'accounts-backup')));
 
   // —— 非交互环境不许弹资源管理器 ——

@@ -10,7 +10,9 @@
     "dev": "node --watch src/index.mjs",
     "dump": "node tools/dump-cred.mjs",
     "smoke": "node tools/smoke-test.mjs",
-    "test": "node tools/run-tests.mjs"
+    "test": "node tools/run-tests.mjs",
+    "test:integration": "node tools/run-tests.mjs --integration",
+    "test:all": "node tools/run-tests.mjs --all"
   },
   "engines": {
     "node": ">=20.0.0"
