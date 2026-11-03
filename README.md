@@ -18,6 +18,25 @@
 > 全在 `src/oauth.mjs` 里实现），**不需要装桌面端**。装了 **OfficeAce 桌面端**（华为云 DevEco
 > Studio 助手）会更省事：服务能自动发现本机已登录的账号，老的「一键授权」入口也能用。
 
+## 💬 参与贡献（有问题 / 建议 / 想改代码，看这里）
+
+欢迎改进本项目！三条路：
+
+- **只是想问问题 / 聊玩法** → 去
+  [Discussions](https://github.com/Q-shuang-dot/officeace2api/discussions)，
+  不适合开 Issue 的内容放这里。
+- **反馈 Bug / 提建议** → 直接开
+  [Issue](https://github.com/Q-shuang-dot/officeace2api/issues/new/choose)，
+  有对应模板，不用写代码。
+- **想改代码** → 先读 **[CONTRIBUTING.md](CONTRIBUTING.md)**，再 Fork → 建分支 → 提 PR。
+
+> ⚠️ 动手前务必确认三条硬规矩：**零 npm 依赖**、**`.cmd` 必须纯 ASCII 无 BOM**、
+> **`data/` 和 `logs/` 不许进提交**。详见 CONTRIBUTING.md 第一节。
+
+> 🔐 发现的是**安全漏洞**（凭据泄漏、鉴权绕过等）请走
+> [私下报告](https://github.com/Q-shuang-dot/officeace2api/security/advisories/new)，
+> 不要开公开 Issue。
+
 ![控制台](docs/panel-accounts.png)
 
 ---
@@ -469,29 +488,6 @@ officeace2api/
 - `node tools/diag-panel-api.mjs` —— **把面板的 `api()` 抠出来真跑**（验 `{json:{…}}` 和 `{json:true, body}` 两种写法）
 - `node tools/diag-fresh-clone.mjs` —— **模拟别人 clone 下来**：只拷 git 跟踪的文件到干净目录起服务
 - `node tools/diag-ghost-accounts.mjs` —— 证明 `labels` 不会造出"幽灵账号"
-
----
-
-## 九、参与贡献
-
-欢迎改进本项目！三条路：
-
-- **只是想问问题 / 聊玩法** → 去
-  [Discussions](https://github.com/Q-shuang-dot/officeace2api/discussions)，
-  不适合开 Issue 的内容放这里。
-- **反馈 Bug / 提建议** → 直接开
-  [Issue](https://github.com/Q-shuang-dot/officeace2api/issues/new/choose)，
-  有对应模板，不用写代码。
-- **想改代码** → 先读 **[CONTRIBUTING.md](CONTRIBUTING.md)**，再 Fork → 建分支 → 提 PR。
-
-> ⚠️ 动手前务必确认三条硬规矩：**零 npm 依赖**、**`.cmd` 必须纯 ASCII 无 BOM**、
-> **`data/` 和 `logs/` 不许进提交**。详见 CONTRIBUTING.md 第一节。
-
-> 🔐 发现的是**安全漏洞**（凭据泄漏、鉴权绕过等）请走
-> [私下报告](https://github.com/Q-shuang-dot/officeace2api/security/advisories/new)，
-> 不要开公开 Issue。
-
----
 
 ## License
 

@@ -18,6 +18,26 @@ Turn a model gateway into a full **OpenAI-compatible API** with a built-in web c
 > also auto-discovers the accounts already signed in on this machine, and the older
 > "one-click authorization" entry works.
 
+## 💬 Contributing (questions / suggestions / code)
+
+Contributions are welcome. Three paths:
+
+- **Just have a question or want to chat** → use
+  [Discussions](https://github.com/Q-shuang-dot/officeace2api/discussions).
+- **Report a bug or suggest a feature** → open an
+  [issue](https://github.com/Q-shuang-dot/officeace2api/issues/new/choose).
+  Templates are provided and no coding is required.
+- **Submit code** → read **[CONTRIBUTING.md](CONTRIBUTING.md)** first (Chinese),
+  then fork, branch and open a pull request.
+
+> ⚠️ Three hard rules before you start: **zero npm dependencies**, **`.cmd` files must be
+> pure ASCII with no BOM**, and **`data/` and `logs/` must never be committed**.
+> See section 1 of CONTRIBUTING.md.
+
+> 🔐 For **security vulnerabilities** (credential leaks, auth bypass, etc.) use
+> [private vulnerability reporting](https://github.com/Q-shuang-dot/officeace2api/security/advisories/new)
+> instead of a public issue.
+
 ![Console](docs/panel-accounts.png)
 
 ---
@@ -419,30 +439,6 @@ officeace2api/
 - `node tools/diag-panel-api.mjs` — **extract and actually run the panel's `api()`** (both `{json:{...}}` and `{json:true, body}` forms)
 - `node tools/diag-fresh-clone.mjs` — **simulate a fresh clone**: copy only git-tracked files to a clean directory and start the service
 - `node tools/diag-ghost-accounts.mjs` — prove that `labels` cannot create "ghost accounts"
-
----
-
-## Contributing
-
-Contributions are welcome. Three paths:
-
-- **Just have a question or want to chat** → use
-  [Discussions](https://github.com/Q-shuang-dot/officeace2api/discussions).
-- **Report a bug or suggest a feature** → open an
-  [issue](https://github.com/Q-shuang-dot/officeace2api/issues/new/choose).
-  Templates are provided and no coding is required.
-- **Submit code** → read **[CONTRIBUTING.md](CONTRIBUTING.md)** first (Chinese),
-  then fork, branch and open a pull request.
-
-> ⚠️ Three hard rules before you start: **zero npm dependencies**, **`.cmd` files must be
-> pure ASCII with no BOM**, and **`data/` and `logs/` must never be committed**.
-> See section 1 of CONTRIBUTING.md.
-
-> 🔐 For **security vulnerabilities** (credential leaks, auth bypass, etc.) use
-> [private vulnerability reporting](https://github.com/Q-shuang-dot/officeace2api/security/advisories/new)
-> instead of a public issue.
-
----
 
 ## Other languages
 
