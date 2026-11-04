@@ -50,7 +50,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 function parseArgs(argv) {
-  const out = { config: path.join(ROOT, 'config.json'), dump: false };
+  // 容器部署时配置通常落在持久卷里（例如 `/app/data/config.json`），
+  // 用环境变量指过去比每次 command 里都带 `--config` 省事。
+  const out = { config: process.env.OFFICEACE2API_CONFIG || path.join(ROOT, 'config.json'), dump: false };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--config' || a === '-c') out.config = path.resolve(argv[++i]);
@@ -77,6 +79,8 @@ if (args.help) {
 环境变量:
   OFFICEACE2API_PORT / OFFICEACE2API_HOST / OFFICEACE2API_KEYS
   OFFICEACE2API_BASE_URL / OFFICEACE2API_AUTHORIZATION
+  OFFICEACE2API_ADMIN_TOKEN（固定面板口令，设了就不再自动生成）
+  OFFICEACE2API_CONFIG（配置文件路径，容器里一般放持久卷）
   OFFICEACE_MODELS_JSON（手工指定 models.json 路径）
 `);
   process.exit(0);

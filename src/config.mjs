@@ -302,13 +302,32 @@ export function unknownConfigKeys(raw, base = DEFAULTS, prefix = '') {
   return out;
 }
 
+/**
+ * 深拷贝一层 JSON 结构。
+ *
+ * `deepMerge` 以前用 `{ ...base }` 只做浅拷贝，于是「文件里没写的项」直接
+ * 引用了 `DEFAULTS` 里的**同一个对象**。之后 `config.listen.port = ...` 这类
+ * 赋值就改到了 DEFAULTS 本身 —— 同一个进程里第二次 `loadConfig` 会读到上一次
+ * 的覆盖值。单进程跑一次服务看不出来，但只要在进程内换配置（测试、容器里改
+ * 环境变量重启）就会串味。所以合并前先把 base 整棵拷一遍。
+ */
+function cloneDeep(value) {
+  if (Array.isArray(value)) return value.map(cloneDeep);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = cloneDeep(v);
+    return out;
+  }
+  return value;
+}
+
 function deepMerge(base, override) {
-  if (Array.isArray(base) || Array.isArray(override)) return override ?? base;
+  if (Array.isArray(base) || Array.isArray(override)) return override ?? cloneDeep(base);
   if (typeof base !== 'object' || base === null) return override ?? base;
-  if (typeof override !== 'object' || override === null) return base;
-  const out = { ...base };
+  if (typeof override !== 'object' || override === null) return cloneDeep(base);
+  const out = cloneDeep(base);
   for (const [k, v] of Object.entries(override)) {
-    out[k] = k in base ? deepMerge(base[k], v) : v;
+    out[k] = k in out ? deepMerge(out[k], v) : v;
   }
   return out;
 }
@@ -332,6 +351,14 @@ export function loadConfig(configPath) {
   }
   if (process.env.OFFICEACE2API_BASE_URL) config.upstream.baseUrl = process.env.OFFICEACE2API_BASE_URL;
   if (process.env.OFFICEACE2API_AUTHORIZATION) config.upstream.authorization = process.env.OFFICEACE2API_AUTHORIZATION;
+  /*
+   * 容器里配置是挂载进去的只读/一次性文件，`ensureAdminToken` 自动生成的口令
+   * 会写回 config.json —— 那份文件在容器重建时就没了。所以额外认一个环境变量，
+   * 让镜像能靠 secret 注入稳定口令。
+   *
+   * 只覆盖非空值：设成空串等于"没设"，继续走 config.json / 自动生成那条老路。
+   */
+  if (process.env.OFFICEACE2API_ADMIN_TOKEN) config.admin.token = process.env.OFFICEACE2API_ADMIN_TOKEN;
 
   config.__file = file;
   // 配置这一层还没有 logger，先挂上去，等 index.mjs 起来之后 warn
@@ -347,5 +374,8 @@ export function saveConfig(config) {
   // 必须一起删掉：否则面板一保存，这个内部字段就被写进 config.json，
   // 下次启动它自己又变成一条"不认识的配置项"。
   delete clone.__unknownKeys;
+  // 容器里配置文件可能落在独立挂载的目录（`OFFICEACE2API_CONFIG=/app/data/config.json`），
+  // 目录不存在时 writeFileSync 会直接抛错。这里容忍一下，代价很小。
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(clone, null, 2));
 }

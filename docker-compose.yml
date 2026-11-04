@@ -1,0 +1,35 @@
+# officeace2api 容器部署示例
+#
+#   docker compose up -d
+#   docker compose logs -f
+#
+# 面板口令与 API Key 用环境变量注入，别写进这个文件：
+#   OFFICEACE2API_ADMIN_TOKEN=$(openssl rand -base64 32) \
+#   OFFICEACE2API_KEYS=sk-$(openssl rand -hex 24) \
+#   docker compose up -d
+#
+# 状态全部落在 ./data（含 config.json）与 ./logs，删容器不丢账号。
+
+services:
+  officeace2api:
+    image: ghcr.io/q-shuang-dot/officeace2api:latest
+    # 想本地构建就打开下面这行
+    # build: .
+    container_name: officeace2api
+    # data/ 里是单实例状态（refresh_token 链、实例锁），只能跑一个副本。
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7864:7864"
+    environment:
+      OFFICEACE2API_HOST: 0.0.0.0
+      OFFICEACE2API_PORT: "7864"
+      OFFICEACE2API_CONFIG: /app/data/config.json
+      # 首次启动会自动生成口令并写进 data/config.json；用环境变量可固定住。
+      OFFICEACE2API_ADMIN_TOKEN: ${OFFICEACE2API_ADMIN_TOKEN:-}
+      OFFICEACE2API_KEYS: ${OFFICEACE2API_KEYS:-sk-officeace}
+      # 通用反代模式：不连华为账号，直接转发到别的 OpenAI 兼容上游
+      # OFFICEACE2API_BASE_URL: https://your-upstream/v1
+      # OFFICEACE2API_AUTHORIZATION: Bearer sk-xxxx
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs

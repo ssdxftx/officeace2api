@@ -210,6 +210,50 @@ cd officeace2api
 | `install-autostart.cmd` | 装成开机自启 |
 | `remove-autostart.cmd` | 卸载自启 |
 
+### 容器部署（Docker / 服务器）
+
+镜像由 GitHub Actions 自动构建并推到 GitHub Container Registry（`.github/workflows/docker.yml`），
+支持 `linux/amd64` 与 `linux/arm64`：
+
+```bash
+docker pull ghcr.io/q-shuang-dot/officeace2api:latest
+```
+
+仓库自带的 `docker-compose.yml` 已经配好目录挂载和环境变量，推荐直接用它：
+
+```bash
+# 生成两个真正的密钥（别用默认的 sk-officeace）
+export OFFICEACE2API_ADMIN_TOKEN=$(openssl rand -base64 32)
+export OFFICEACE2API_KEYS=sk-$(openssl rand -hex 24)
+
+docker compose up -d
+docker compose logs -f
+```
+
+`docker compose up` 会在当前目录建 `data/` 和 `logs/` 并挂进容器，账号、用量、配置都在
+`data/` 里，删容器不丢。默认只把端口绑在 `127.0.0.1`，对外提供服务请在前面套 Nginx/Caddy 加 TLS。
+
+镜像里预置了 `OFFICEACE2API_HOST=0.0.0.0`、`OFFICEACE2API_PORT=7864`、
+`OFFICEACE2API_CONFIG=/app/data/config.json`，可用环境变量覆盖的有：
+
+| 环境变量 | 作用 |
+|---|---|
+| `OFFICEACE2API_HOST` / `OFFICEACE2API_PORT` | 监听地址与端口 |
+| `OFFICEACE2API_KEYS` | API Key 列表（逗号分隔） |
+| `OFFICEACE2API_ADMIN_TOKEN` | 固定面板口令；设了就不会再自动生成写回 config.json |
+| `OFFICEACE2API_BASE_URL` / `OFFICEACE2API_AUTHORIZATION` | 手工上游（通用 OpenAI 反代模式） |
+| `OFFICEACE2API_CONFIG` | 配置文件路径，默认 `<项目根>/config.json` |
+
+容器里能做什么、不能做什么：
+
+- **能用**：面板自助登录（PKCE + 云端轮询，不需要本地回调端口）、导入导出账号包、手工上游。
+- **不能用**：自动发现本机 OfficeAce 桌面端、DPAPI 解密凭据（这两条是 Windows 专属），
+  以及 `start.cmd` / 看门狗那套自启脚本；容器重启策略交给 `restart: unless-stopped`。
+- **只跑一个副本**：`data/` 里是单实例状态（实例锁、单次使用的 refresh_token 链），
+  横向扩容会让两边互相覆盖，别开多个 replica。
+
+健康检查探的是 `/healthz`（免鉴权），账号没配好时返回 `status: degraded` 而不是非 200。
+
 ---
 
 ## 四、怎么加账号
@@ -409,6 +453,9 @@ officeace2api/
 ├── import-accounts.cmd                    在新电脑导入凭证（把文件拖到它上面）
 ├── accounts-backup/                       导出的搬运包落这儿（不进仓库：里面是凭据！）
 ├── config.json                            配置（首次启动自动生成，不进仓库）
+├── Dockerfile / docker-compose.yml        容器镜像与部署示例
+├── docker/docker-entrypoint.sh            容器入口（修正挂载目录属主后降权）
+├── .github/workflows/docker.yml           推送到 main / tag 时自动构建并推 GHCR
 ├── src/                                   服务本体
 │   ├── index.mjs       入口
 │   ├── server.mjs      HTTP 路由与 API 实现
@@ -439,7 +486,9 @@ officeace2api/
   `officeace2api-vX.Y.Z.zip` + `SHA256SUMS.txt`；解压后直接跑，不用 `git clone`。
 - **[docs/技术笔记.md](docs/技术笔记.md)** —— 实现原理、OAuth/PKCE 链路、
   DPAPI 解密、V11-HMAC-SHA256 签名、推理模型 token 预算、踩过的坑，都在这里。
-- `npm test` —— 全量纯测试（24 个脚本，干净 clone 可跑；不碰真实服务）
+- `npm test` —— 全量纯测试（28 个脚本，干净 clone 可跑；不碰真实服务）
+- `node tools/test-config-env.mjs` —— 环境变量覆盖配置（20 项：容器注入监听地址/端口/Key/
+  上游/面板口令，空串等于没设，DEFAULTS 不会被上一次加载污染）
 - `npm run test:integration -- --base http://127.0.0.1:7864` —— 面板接口 + 端到端冒烟（会改测试实例的配置）
 - `node tools/test-routing.mjs` —— 路由纯函数（7 项：显式会话 ID / system 变化不破黏性 /
   Retry-After 秒数与 HTTP 日期）

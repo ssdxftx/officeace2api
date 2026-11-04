@@ -219,6 +219,54 @@ Double-click **`remove-autostart.cmd`** to uninstall.
 | `install-autostart.cmd` | Install autostart |
 | `remove-autostart.cmd` | Remove autostart |
 
+### Container deployment (Docker / server)
+
+Images are built and pushed to the GitHub Container Registry by GitHub Actions
+(`.github/workflows/docker.yml`) for `linux/amd64` and `linux/arm64`:
+
+```bash
+docker pull ghcr.io/q-shuang-dot/officeace2api:latest
+```
+
+The bundled `docker-compose.yml` already mounts the right directories and sets the env vars:
+
+```bash
+# generate real secrets (do not keep the default sk-officeace)
+export OFFICEACE2API_ADMIN_TOKEN=$(openssl rand -base64 32)
+export OFFICEACE2API_KEYS=sk-$(openssl rand -hex 24)
+
+docker compose up -d
+docker compose logs -f
+```
+
+`docker compose up` creates `data/` and `logs/` next to the compose file and mounts them into the
+container. Accounts, usage and config all live in `data/`, so recreating the container loses nothing.
+The port is bound to `127.0.0.1` by default; put Nginx or Caddy in front with TLS for public access.
+
+The image sets `OFFICEACE2API_HOST=0.0.0.0`, `OFFICEACE2API_PORT=7864` and
+`OFFICEACE2API_CONFIG=/app/data/config.json`. Supported overrides:
+
+| Variable | Purpose |
+|---|---|
+| `OFFICEACE2API_HOST` / `OFFICEACE2API_PORT` | listen address and port |
+| `OFFICEACE2API_KEYS` | API keys, comma separated |
+| `OFFICEACE2API_ADMIN_TOKEN` | fixed admin token; when set it is never auto-generated or written back |
+| `OFFICEACE2API_BASE_URL` / `OFFICEACE2API_AUTHORIZATION` | manual upstream (generic OpenAI proxy mode) |
+| `OFFICEACE2API_CONFIG` | config file path, defaults to `<project root>/config.json` |
+
+What works in a container and what does not:
+
+- **Works:** console self-service sign-in (PKCE + cloud polling, no local callback port needed),
+  account bundle import/export, manual upstream.
+- **Does not work:** auto-discovery of a local OfficeAce desktop client and DPAPI credential
+  decryption (both Windows-only), plus the `.cmd`/watchdog autostart scripts; use
+  `restart: unless-stopped` instead.
+- **One replica only:** `data/` holds single-instance state (the instance lock and the single-use
+  refresh-token chain). Running two replicas makes them overwrite each other.
+
+The healthcheck probes `/healthz` (no auth); it returns `status: degraded` rather than a non-200
+when no account is configured yet.
+
 ---
 
 ## 4. Ways to add accounts
@@ -384,6 +432,9 @@ officeace2api/
 ├── import-accounts.cmd                    import that bundle on the new machine
 ├── accounts-backup/                       exported bundles land here (not tracked: they ARE credentials)
 ├── config.json                            config (auto-generated, not tracked)
+├── Dockerfile / docker-compose.yml        container image and deployment example
+├── docker/docker-entrypoint.sh            container entrypoint (fixes mount ownership, drops privileges)
+├── .github/workflows/docker.yml           builds and pushes to GHCR on main / tags
 ├── src/                                   the service
 │   ├── index.mjs       entry point
 │   ├── server.mjs      HTTP routing and API implementation
@@ -411,7 +462,10 @@ officeace2api/
 - **[docs/技术笔记.md](docs/技术笔记.md)** (Chinese) — implementation details, the OAuth/PKCE
   chain, DPAPI decryption, V11-HMAC-SHA256 signing, the reasoning-model token budget, and the
   pitfalls encountered along the way.
-- `npm test` — full hermetic test suite (24 scripts, works on a clean clone; no live service)
+- `npm test` — full hermetic test suite (28 scripts, works on a clean clone; no live service)
+- `node tools/test-config-env.mjs` — environment overrides for config (20 cases: listen host/port,
+  keys, upstream, admin token injected by the container; empty means unset; DEFAULTS is not
+  polluted by a previous load)
 - `npm run test:integration -- --base http://127.0.0.1:7864` — admin API + end-to-end smoke test (mutates the test instance)
 - `node tools/test-admin.mjs --base http://127.0.0.1:7864` — console API self-test (integration test; explicit target required)
 - `node tools/test-account-bundle.mjs` — the move-to-a-new-computer bundle (76 cases, all in a
