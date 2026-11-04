@@ -816,7 +816,8 @@ export class AccountStore {
       acc.health = evaluateHealth(acc);
       acc.keyFingerprint = `${credential.accessKeyId.slice(0, 8)}…${credential.accessKeyId.slice(-4)}`;
       acc.profileAgeMs = acc.profile?.expiresAt ? acc.profile.expiresAt - Date.now() : 0;
-      log.info('账号已套用续期凭据', { id: acc.id, expiresAt: credential.expiresAt });
+      // 续期回填是内部步骤，不单独占一行 INFO；成功汇总在调用方。
+      log.debug('账号已套用续期凭据', { id: acc.id, expiresAt: credential.expiresAt });
     }
     return applied;
   }
@@ -915,7 +916,8 @@ export class AccountStore {
     if (!target.profile) target.profile = {};
     target.profile.refreshToken = token;
     if (refreshExpiresAt) target.profile.refreshExpiresAt = refreshExpiresAt;
-    log.info('账号档案已换上新的 refresh_token（仅内存）', { id: target.id });
+    // 换 token 是续期链的内部动作，INFO 里没必要每次点名一个 64 字符的账号 ID。
+    log.debug('账号档案已换上新的 refresh_token（仅内存）', { id: target.id });
     return true;
   }
 

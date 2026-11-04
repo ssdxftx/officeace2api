@@ -680,7 +680,9 @@ export class CredentialRefresher {
       };
     }
 
-    log.info('凭据续期成功', {
+    // 这是底层细节：一次续期会在 quota / accounts / 调用方各留一条，INFO 级
+    // 四行叠在一起特别吵。成功与否由调用方汇总成一行，这里只给排障留 DEBUG。
+    log.debug('凭据续期成功', {
       accountId: accountId || userId,
       tokenSource: pick.source,
       expiresAt: credential.expiresAt,

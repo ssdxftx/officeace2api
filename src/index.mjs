@@ -287,7 +287,7 @@ let lastIgnoredSig = '';
  * 真正的事件（新号授权进来、注册完成、上游目录变了）全被埋在里头。
  *
  *   reason 不是 interval（说明刚发生了某件事）→ 一律 INFO
- *   interval 且数字变了（有基线）            → INFO，并带上变化前的数字
+ *   interval 且状态数字变了 / 本轮真的加进了新凭据 → INFO
  *   interval 且一字没变                      → DEBUG 心跳，最多 5 分钟一条
  *
  * 心跳不能省：没有它就看不出「发现这条链还活着没有」。
@@ -298,14 +298,15 @@ let lastDiscoveryBeatAt = 0;
 
 function logDiscoveryResult(summary) {
   const before = lastDiscoverySummary;
+  // `added` 是「本轮新增几条」，不是池子的状态：启动时 3、下一轮 0 是正常的，
+  // 拿它参与比较会让每次启动后的第一轮都多打一条毫无信息量的 INFO。
   const same = before
     && before.credentials === summary.credentials
     && before.accounts === summary.accounts
-    && before.catalog === summary.catalog
-    && before.added === summary.added;
+    && before.catalog === summary.catalog;
   lastDiscoverySummary = summary;
-  if (!(summary.reason === 'interval' && same)) {
-    log.info('凭据发现完成', before ? { ...summary, was: before } : summary);
+  if (!(summary.reason === 'interval' && same && !summary.added)) {
+    log.info('凭据发现完成', summary);
     lastDiscoveryBeatAt = Date.now();
     return;
   }
@@ -647,6 +648,8 @@ if (renewEnabled && config.credits?.enabled !== false && config.credits?.autoRef
    */
   const renewInFlightAccounts = new Set();
   const renewPass = async () => {
+    let renewed = 0;
+    let failed = 0;
     try {
       for (const id of accountStore.ids()) {
         if (renewInFlightAccounts.has(id)) continue;
@@ -686,7 +689,8 @@ if (renewEnabled && config.credits?.enabled !== false && config.credits?.autoRef
         try {
           const r = await credits.refreshCredential(id);
           if (r?.ok) {
-            log.info('临期凭据已主动续期', {
+            renewed += 1;
+            log.debug('临期凭据已主动续期', {
               id,
               leftMinutes: Math.round(leftMs / 60000),
               leadMinutes: Math.round(leadMs / 60000),
@@ -694,6 +698,7 @@ if (renewEnabled && config.credits?.enabled !== false && config.credits?.autoRef
               expiresAt: r.credential?.expiresAt || '',
             });
           } else {
+            failed += 1;
             log.warn('临期续期失败', { id, leftMinutes: Math.round(leftMs / 60000), error: r?.error || '' });
           }
         } finally {
@@ -703,6 +708,8 @@ if (renewEnabled && config.credits?.enabled !== false && config.credits?.autoRef
     } catch (err) {
       log.warn('临期续期任务异常', { error: String(err?.message || err) });
     }
+    // 一个号一行 INFO 太吵：这一轮到底续了几个，汇总一行就够。
+    if (renewed || failed) log.info('临期凭据续期完成', { renewed, failed });
   };
   const renewTimer = setInterval(renewPass, RENEW_CHECK_MS);
   renewTimer.unref?.();

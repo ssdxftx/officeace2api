@@ -154,7 +154,9 @@ export class CredentialPool {
     };
     this.restoreEntry(entry);
     this.entries.push(entry);
-    log.info('凭据已加入池', { baseUrl: cred.baseUrl, source: cred.source });
+    // 每条凭据一行 INFO 会把启动日志刷满，而且 source 是完整磁盘路径。
+    // 池里到底有几条，`凭据发现完成` 已经报了；这里留 DEBUG 给排障用。
+    log.debug('凭据已加入池', { baseUrl: cred.baseUrl, source: cred.source });
     return true;
   }
 
