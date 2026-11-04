@@ -439,6 +439,8 @@ export function createChatAccumulator(fallbackModel = '') {
     sawDone: false,
     events: 0,
     firstDataAt: 0,
+    // 首个有效输出，独立于 role / usage / 错误帧的 firstDataAt（旧日志继续用后者）。
+    firstContentAt: 0,
     error: null,
   };
 
@@ -461,6 +463,8 @@ export function createChatAccumulator(fallbackModel = '') {
     if (!chunk || typeof chunk !== 'object') return;
     state.events += 1;
     if (!state.firstDataAt) state.firstDataAt = Date.now();
+    // 有些网关把已经消耗的 usage 和 error 放在同一帧，失败时也要留住它。
+    if (chunk.usage) state.usage = chunk.usage;
     if (chunk.error) {
       state.error = chunk.error;
       return;
@@ -468,13 +472,19 @@ export function createChatAccumulator(fallbackModel = '') {
     if (chunk.id) state.id = state.id || chunk.id;
     if (chunk.created) state.created = state.created || chunk.created;
     if (chunk.model) state.model = chunk.model;
-    if (chunk.usage) state.usage = chunk.usage;
 
+    const hasText = (v) => typeof v === 'string' && v.length > 0;
     const list = Array.isArray(chunk.choices) ? chunk.choices : [];
     for (const raw of list) {
       if (!raw || typeof raw !== 'object') continue;
       const c = choiceAt(raw.index);
       const delta = raw.delta || raw.message || {};
+      if (!state.firstContentAt && (
+        hasText(delta.content) || hasText(delta.reasoning_content) || hasText(delta.reasoning) ||
+        hasText(delta.function_call?.name) || hasText(delta.function_call?.arguments) ||
+        (Array.isArray(delta.tool_calls) && delta.tool_calls.some((tc) =>
+          hasText(tc?.function?.name) || hasText(tc?.function?.arguments)))
+      )) state.firstContentAt = Date.now();
       if (delta.role) c.role = delta.role;
       if (typeof delta.content === 'string') c.content += delta.content;
       if (typeof delta.reasoning_content === 'string') c.reasoning += delta.reasoning_content;

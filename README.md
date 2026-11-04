@@ -336,8 +336,18 @@ DPoP 私钥、续期链（含已作废 token 的黑名单）、别名、启停�
 abort 上游请求带出来的原因 —— 常见于客户端超时重试、用户点停止、切换会话/模型。
 它和上游 RST / `upstream timeout` 是两回事，不会罚凭据、也不该记成上游故障。
 
-现在这类事件记成 `INFO 客户端已断开...`，并带上 `request_id / seq / src / ua / elapsedMs`，方便看是
-哪个客户端断的、对应客户端拿到的哪个 `X-Request-Id`。流式请求如果 3 秒还没等到首包，服务会先回 `200 + SSE 头` 并每 10 秒
+两种要分开看：
+
+- **回复已经完整、客户端才挂断**：`finish_reason` 已经出现过，只是客户端不等尾巴上的
+  usage 帧和 `[DONE]`。DSH / pi-ai 这类客户端拿到 `finish_reason` 就结束消费，所以
+  带 `tool_calls` 的步骤特别常见（正文 0 字、只有 reasoning + tool_call，日志里
+  `tokens:0` 不代表失败）。这类现在记成正常请求，行尾带
+  `note=client-closed-after-finish`，照常计入「用量」。
+- **真中途断了**：没看到 `finish_reason`。记 `INFO 客户端已断开...`，带
+  `seq / request_id / src / ua / elapsedMs`，方便看是哪个客户端断的、对应哪个
+  `X-Request-Id`；不罚凭据、不计熔断。
+
+流式请求如果 3 秒还没等到首包，服务会先回 `200 + SSE 头` 并每 10 秒
 发一个 `: ping` 注释帧，避免客户端在等 HTTP 头时超时；可用 `config.json` 的
 `upstream.earlyHeaderMs` 调整（设 `0` 关闭，回到"等首帧再发头"）。
 

@@ -33,6 +33,7 @@ import { trimSlash } from './util.mjs';
 import { formatChatLine } from './logfmt.mjs';
 import { nextRequestId, readJson, sendJson, writeChunk, writeSseHead } from './http-utils.mjs';
 import { retryAfterMsOf, sessionAffinityKey } from './routing.mjs';
+import { usageFiltersFromQuery, exportUsageCsv } from './usage-api.mjs';
 
 const log = createLogger('server');
 
@@ -274,8 +275,9 @@ async function relayPrimed(primed, res, { model, signal, startedAt } = {}) {
   // 客户端在预读期间已经走了：别往一个 destroy 掉的 socket 上写。
   if (res.destroyed) {
     return {
-      usage: null,
+      usage: primed.events.findLast((evt) => evt.data?.usage)?.data.usage || null,
       firstDataAt: 0,
+      firstContentAt: 0,
       tokens: 0,
       contentChars: 0,
       reasoningChars: 0,
@@ -308,8 +310,9 @@ async function relayPrimed(primed, res, { model, signal, startedAt } = {}) {
         clientGone = true; // 客户端自己走了，不是上游的问题
         break;
       }
-      await writeChunk(res, value);
+      // 先观测已可交付的内容，再等下游 drain；背压等待不应抬高 TTFT。
       acc.push(primed.decoder.push(value));
+      await writeChunk(res, value);
       if (typeof res.flush === 'function') res.flush();
     }
     acc.push(primed.decoder.flush());
@@ -360,6 +363,7 @@ async function relayPrimed(primed, res, { model, signal, startedAt } = {}) {
   return {
     usage: acc.state.usage,
     firstDataAt: acc.state.firstDataAt,
+    firstContentAt: acc.state.firstContentAt,
     tokens: acc.state.content.length,
     // 流式已经往客户端写了字节，发现空正文也没法重打（不像非流式那样可以重试），
     // 所以把两个长度带出去，上层至少能记一条日志告诉用户"为什么回复是空的"。
@@ -406,6 +410,7 @@ async function aggregatePrimed(primed, { model }) {
   // 承诺不会出现的那种。
   return {
     payload: acc.build(),
+    usage: acc.state.usage,
     error: acc.state.error,
     upstreamError,
     truncated: !acc.state.sawDone && !acc.state.finishReason,
@@ -563,10 +568,15 @@ export function createApp(ctx) {
     }
   }
 
-  async function runCompletion({ res, body, model, wantStream, apiKey, endpoint, abortSignal, req, requestId = '' }) {
+  async function runCompletion({ res, body, model, wantStream, apiKey, endpoint, abortSignal, req, telemetry }) {
     const startedAt = Date.now();
     const seq = ++chatSeq;
-    const rid = requestId || nextRequestId();
+    const rid = telemetry.requestId;
+    const attemptOffset = telemetry.attemptCount;
+    telemetry.resolvedModel = model;
+    telemetry.entry = null;
+    // 各出口只缓存本轮结果；整个 fallback 串结束后统一 record 一次。
+    const observeCompletion = (entry) => { telemetry.entry = entry; };
     // 同一会话尽量固定到同一个号，命中上游 prefix cache（几万 token 的上下文
     // 换号等于每轮从零 prefill）。没有会话 ID 时按首条消息哈希兜底。
     const sessionKey = sessionAffinityKey(body, model, req);
@@ -649,6 +659,11 @@ export function createApp(ctx) {
     }
 
     const attempts = [];
+    const noteAttempt = (entry) => attempts.push({
+      ...entry,
+      model,
+      ...(telemetry.usage ? { usage: telemetry.usage } : {}),
+    });
     let attemptsLeft = maxAttempts;
     let stripThinking = !!quirksFor(model).noThinking;
     let stripUsed = stripThinking;
@@ -703,11 +718,26 @@ export function createApp(ctx) {
         pool.release(currentCred);
         currentCred = null;
       }
+      if (clientIsGone()) {
+        telemetry.cancelled = true;
+        return null;
+      }
       attemptsLeft -= 1;
       const attemptNo = attempts.length + 1;
-      const cred = await pool.acquire(model, { sessionKey, trackInFlight: true });
+      const queueStartedAt = Date.now();
+      let cred;
+      try {
+        cred = await pool.acquire(model, { sessionKey, trackInFlight: true });
+      } finally {
+        telemetry.queueMs += Math.max(0, Date.now() - queueStartedAt);
+      }
       currentCred = cred;
+      if (clientIsGone()) {
+        telemetry.cancelled = true;
+        return null;
+      }
       if (!cred) {
+        observeCompletion({ model, ok: false, status: 503, errorCode: 'no_credential', error: '凭据池为空' });
         return openAiError(
           '凭据池为空：打开控制台「号池」页点「换个账号登录」即可（不需要 OfficeAce 桌面端）；' +
           '也可以「导入账号」贴一份 baseUrl + Authorization，或在 config.json 里手工填 upstream.baseUrl / upstream.authorization',
@@ -750,6 +780,9 @@ export function createApp(ctx) {
       }
 
       let handle;
+      telemetry.credential = cred;
+      telemetry.usage = null;
+      telemetry.attemptCount += 1;
       try {
         handle = await postChat(cred, upstreamBody, {
           timeoutMs,
@@ -760,6 +793,7 @@ export function createApp(ctx) {
         const message = String(err?.message || err);
         // 客户端自己断的：不是上游连接失败，别罚凭据、别打 WARN、更别重试。
         if (isClientDisconnect(err) || clientIsGone()) {
+          telemetry.cancelled = true;
           stopHeartbeat();
           log.info('客户端已断开，取消上游请求（不是上游故障）', {
             seq,
@@ -775,7 +809,7 @@ export function createApp(ctx) {
         pool.markFailed(cred, message);
         lastError = message;
         lastStatus = 502;
-        attempts.push({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, error: message });
+        noteAttempt({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, error: message });
         log.warn('上游连接失败', {
           seq,
           rid,
@@ -795,7 +829,12 @@ export function createApp(ctx) {
         const text = await upstreamRes.text().catch(() => '');
         const retryAfterMs = retryAfterMsOf(upstreamRes.headers);
         handle.cleanup();
+        if (clientIsGone()) {
+          telemetry.cancelled = true;
+          return null;
+        }
         const info = classifyUpstream(upstreamRes.status, text);
+        telemetry.usage = info.payload?.usage || null;
         lastError = info.message;
         lastStatus = info.requestTooLarge
           ? 413
@@ -806,7 +845,7 @@ export function createApp(ctx) {
               : info.badRequest
                 ? 400
                 : 502;
-        attempts.push({
+        noteAttempt({
           attempt: attemptNo,
           cred: cred.baseUrl, accountId: cred.accountId,
           status: upstreamRes.status,
@@ -827,7 +866,7 @@ export function createApp(ctx) {
             log.warn('这个模型在当前号池里没有可用的凭据', { model, cooled: av.cooled });
             // 这个分支在重试循环里直接 return，必须自己记一条，
             // 否则面板只看到「没有调用记录」，反而不知道模型被整池拒绝了。
-            usage.record({
+            observeCompletion({
               model,
               apiKey,
               usage: null,
@@ -866,7 +905,7 @@ export function createApp(ctx) {
             code: info.code,
             message: info.message,
           });
-          usage.record({
+          observeCompletion({
             model,
             apiKey,
             usage: null,
@@ -926,6 +965,7 @@ export function createApp(ctx) {
       } catch (err) {
         handle.cleanup();
         if (isClientDisconnect(err) || clientIsGone()) {
+          telemetry.cancelled = true;
           stopHeartbeat();
           log.info('客户端已断开，停止等待首包（不是上游故障）', {
             seq,
@@ -942,7 +982,7 @@ export function createApp(ctx) {
         pool.markFailed(cred, message);
         lastError = message;
         lastStatus = 502;
-        attempts.push({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, error: message });
+        noteAttempt({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, error: message });
         log.warn('上游首包读取失败', {
           seq,
           rid,
@@ -956,6 +996,13 @@ export function createApp(ctx) {
         continue;
       }
 
+      telemetry.usage = primed.events.findLast((evt) => evt.data?.usage)?.data.usage || null;
+      if (clientIsGone()) {
+        handle.cleanup();
+        telemetry.cancelled = true;
+        return null;
+      }
+
       if (primed.kind === 'error') {
         handle.cleanup();
         const info = classifyUpstream(info_statusOf(primed.payload), JSON.stringify(primed.payload));
@@ -963,7 +1010,7 @@ export function createApp(ctx) {
         // 请求体太大是确定性的，重试只会把整个 body 再传一遍（实测 5.5MB），
         // 所以这一档也不重试 —— 状态码给 413，让客户端知道该清历史了。
         lastStatus = info.requestTooLarge ? 413 : info.rateLimited ? 429 : 502;
-        attempts.push({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, code: info.code, error: info.message });
+        noteAttempt({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, code: info.code, error: info.message });
         if (info.requestTooLarge) {
           // 上游有时会用 HTTP 200 包着错误体回（这一段就是兜这种情况）。
           // 请求体太大是确定性的，重试只会再传一遍整个 body。
@@ -986,12 +1033,20 @@ export function createApp(ctx) {
         stopHeartbeat();
         const result = await relayPrimed(primed, res, { model, signal: abortSignal, startedAt });
         handle.cleanup();
+        telemetry.usage = result.usage;
+        if (!telemetry.firstContentAt) telemetry.firstContentAt = result.firstContentAt || 0;
         // 首包时间只在这一发真的拿到字节时才有意义；客户端秒断传 0，别污染 EWMA。
         pool.release(cred, result.firstDataAt ? result.firstDataAt - startedAt : 0, model);
         currentCred = null;
 
-        if (result.clientGone || clientIsGone()) {
-          // 客户端自己走了：不 markFailed、不记 usage 失败，也不打 WARN。
+        const clientLeft = result.clientGone || clientIsGone();
+        // 一些客户端见到 finish_reason 就结束，不再等 usage / [DONE]；正文已完成不是取消。
+        const finishedBeforeClose = clientLeft && !!result.finishReason &&
+          !result.error && !result.truncated && !result.upstreamError;
+        telemetry.finishedBeforeClose = finishedBeforeClose;
+        if (clientLeft && !finishedBeforeClose) {
+          telemetry.cancelled = true;
+          // 客户端自己走了：不罚账号；请求级记录独立 cancelled，不计服务失败。
           log.info('客户端已断开，停止转发（不是上游故障）', {
             seq,
             rid,
@@ -1010,10 +1065,11 @@ export function createApp(ctx) {
           // 但池子和统计必须按失败记，否则这个正在限流的凭据不会冷却，
           // 下一个请求还会挑到它，然后继续报同样的错。
           const info = classifyUpstream(200, JSON.stringify({ error: result.error }));
+          noteAttempt({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, status: 200, code: info.code, error: info.message });
           if (info.rateLimited) pool.markRateLimited(cred, model, info.message);
           else if (!info.badRequest) pool.markFailed(cred, info.message);
           else log.info('流内 4xx 请求错误，不计入账号熔断', { model, code: info.code, message: info.message });
-          usage.record({
+          observeCompletion({
             model,
             apiKey,
             usage: result.usage,
@@ -1042,8 +1098,9 @@ export function createApp(ctx) {
           // 但池子和统计不能记成功 —— 一条断掉的流记成 ok，
           // 会让这个其实不健康的凭据一直被认为可用。
           const msg = result.upstreamError || '上游连接中途断开，这条回复不完整';
+          noteAttempt({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, status: 200, code: 'UPSTREAM_TRUNCATED', error: msg });
           pool.markFailed(cred, msg);
-          usage.record({
+          observeCompletion({
             model,
             apiKey,
             usage: result.usage,
@@ -1072,7 +1129,7 @@ export function createApp(ctx) {
         }
 
         markModelUsable(cred, model);
-        usage.record({
+        observeCompletion({
           model,
           apiKey,
           usage: result.usage,
@@ -1099,6 +1156,7 @@ export function createApp(ctx) {
             ttfbMs: result.firstDataAt ? result.firstDataAt - startedAt : null,
             outTokens: result.usage?.completion_tokens ?? null,
             tps: calcTps(result.usage, startedAt, result.firstDataAt, endedAt),
+            note: finishedBeforeClose ? 'client-closed-after-finish' : undefined,
             effort: requestedEffort,
             totalMs: endedAt - startedAt,
             src: clientSrc,
@@ -1126,11 +1184,13 @@ export function createApp(ctx) {
 
       const agg = await aggregatePrimed(primed, { model });
       handle.cleanup();
+      telemetry.usage = agg.usage;
       pool.release(cred, 0, model);
       currentCred = null;
 
       // 客户端在等整段聚合时断开：不是上游失败，别重试、别罚凭据。
       if (clientIsGone() || isClientDisconnect(agg.upstreamError)) {
+        telemetry.cancelled = true;
         stopHeartbeat();
         log.info('客户端已断开，放弃非流式请求（不是上游故障）', {
           seq,
@@ -1166,7 +1226,7 @@ export function createApp(ctx) {
         const info = classifyUpstream(200, JSON.stringify(aggFailure));
         lastError = info.message;
         lastStatus = info.rateLimited ? 429 : 502;
-        attempts.push({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, code: info.code, error: info.message });
+        noteAttempt({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, code: info.code, error: info.message });
         if (info.rateLimited) pool.markRateLimited(cred, model, info.message);
         else if (!info.badRequest) pool.markFailed(cred, info.message);
         else log.info('上游流内 4xx 请求错误，不计入账号熔断', { model, code: info.code, message: info.message });
@@ -1245,7 +1305,7 @@ export function createApp(ctx) {
           maxTokensBefore: sentBefore,
           maxTokensRetry: emptyRetryMaxTokens,
         });
-        attempts.push({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, code: 'EMPTY_CONTENT_RETRY', error: `推理用掉 ${rt} token，没留下正文` });
+        noteAttempt({ attempt: attemptNo, cred: cred.baseUrl, accountId: cred.accountId, code: 'EMPTY_CONTENT_RETRY', error: `推理用掉 ${rt} token，没留下正文` });
         // 不算这条凭据的错，标记 ok。
         // ⚠️ 这里**不能**用 markModelUsable：这次是"空正文"，它只证明
         // 凭据没坏，不证明模型列得出来（探测黑名单不该被它撤销）。
@@ -1257,10 +1317,10 @@ export function createApp(ctx) {
       }
 
       markModelUsable(cred, model);
-      usage.record({
+      observeCompletion({
         model,
         apiKey,
-        usage: payload.usage,
+        usage: agg.usage,
         ok: true,
         status: 200,
         latencyMs: Date.now() - startedAt,
@@ -1298,6 +1358,8 @@ export function createApp(ctx) {
       return { status: 200, body: payload };
       }
     } finally {
+      stopHeartbeat();
+      telemetry.attempts.push(...attempts.map((a) => ({ ...a, attempt: attemptOffset + a.attempt })));
       if (currentCred) pool.release(currentCred);
     }
 
@@ -1305,6 +1367,7 @@ export function createApp(ctx) {
 
     // 重试都打完了，但客户端早就走了：没有可写的地方，也別记一条假失败。
     if (clientIsGone()) {
+      telemetry.cancelled = true;
       log.info('客户端已断开，放弃本次请求（不是上游故障）', {
         seq,
         rid,
@@ -1320,7 +1383,7 @@ export function createApp(ctx) {
     // 最后一次尝试的摘要就是客户端最终看到的错误来源；把它和整串 attempts
     // 一起落进 recent，面板才能解释“为什么失败、换号后有没有变化”。
     const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
-    usage.record({
+    observeCompletion({
       model,
       apiKey,
       usage: null,
@@ -1378,34 +1441,94 @@ export function createApp(ctx) {
    * SSE 头/半截正文打架。默认关闭：`models.fallback` 为空就不做任何事。
    */
   async function runWithFallback(args) {
-    const first = await runCompletion(args);
-    if (!first) return null;
+    const telemetry = {
+      startedAt: args.requestStartedAt ?? Date.now(),
+      requestId: args.requestId || nextRequestId(),
+      requestedModel: String(args.requestedModel || args.model || ''),
+      resolvedModel: args.model,
+      queueMs: 0,
+      firstContentAt: 0,
+      attemptCount: 0,
+      attempts: [],
+      credential: null,
+      usage: null,
+      entry: null,
+      cancelled: false,
+      finishedBeforeClose: false,
+    };
+    try {
+      const first = await runCompletion({ ...args, telemetry });
+      if (!first) return null;
 
-    const status = Number(first.status);
-    if (![429, 500, 502, 503].includes(status) || args.fallbackDepth) return first;
-    if (args.res?.headersSent) return first;
+      const status = Number(first.status);
+      if (![429, 500, 502, 503].includes(status) || args.fallbackDepth) return first;
+      if (args.res?.headersSent) return first;
 
-    const requested = String(args.requestedModel || args.model || '');
-    const chain = config.models?.fallback?.[requested] ?? config.models?.fallback?.[args.model] ?? [];
-    if (!Array.isArray(chain) || !chain.length) return first;
+      const requested = telemetry.requestedModel;
+      const chain = config.models?.fallback?.[requested] ?? config.models?.fallback?.[args.model] ?? [];
+      if (!Array.isArray(chain) || !chain.length) return first;
 
-    const known = new Set(registry.ids());
-    for (const candidate of chain) {
-      const next = registry.resolve(candidate);
-      if (!next || next === args.model || !known.has(next)) continue;
-      log.info('主模型失败，尝试兜底模型', {
-        from: args.model,
-        to: next,
-        status,
-        requestId: args.requestId,
+      const known = new Set(registry.ids());
+      for (const candidate of chain) {
+        const next = registry.resolve(candidate);
+        if (!next || next === args.model || !known.has(next)) continue;
+        log.info('主模型失败，尝试兜底模型', {
+          from: args.model,
+          to: next,
+          status,
+          requestId: telemetry.requestId,
+        });
+        args.res?.setHeader('X-Fallback-Model', next);
+        // await 很重要：finally 必须等整串结束，而不是刚发起 fallback 就落记录。
+        return await runCompletion({ ...args, model: next, fallbackDepth: 1, telemetry });
+      }
+      return first;
+    } catch (err) {
+      telemetry.entry = {
+        ok: false,
+        status: Number(err?.status) || 500,
+        errorCode: err?.code || '',
+        error: String(err?.message || err),
+      };
+      throw err;
+    } finally {
+      const endedAt = Date.now();
+      const entry = telemetry.entry || {};
+      const cancelled = !telemetry.finishedBeforeClose &&
+        (telemetry.cancelled || isClientDisconnect(args.abortSignal?.reason));
+      const finalUsage = entry.usage ?? telemetry.usage;
+      const firstContentAt = args.wantStream ? telemetry.firstContentAt : 0;
+      // usage 仅代表终态这一发的已知用量；更早失败/重试的已知消耗在 attempts[].usage，
+      // 分开留证据，不把缺失的上游 usage 当成 0，也不拿跨尝试 token 算生成速度。
+      usage.record({
+        ...entry,
+        model: telemetry.resolvedModel,
+        requestedModel: telemetry.requestedModel,
+        resolvedModel: telemetry.resolvedModel,
+        requestId: telemetry.requestId,
+        apiKey: args.apiKey,
+        endpoint: args.endpoint,
+        stream: args.wantStream,
+        usage: finalUsage,
+        ok: !cancelled && entry.ok === true,
+        outcome: cancelled ? 'cancelled' : entry.ok === true ? 'ok' : 'failed',
+        status: cancelled ? 499 : entry.status || 500,
+        error: cancelled ? CLIENT_DISCONNECTED : entry.error || '',
+        errorCode: cancelled ? 'CLIENT_DISCONNECTED' : entry.errorCode || '',
+        credential: entry.credential ?? telemetry.credential?.baseUrl ?? '',
+        accountId: entry.accountId ?? telemetry.credential?.accountId ?? '',
+        latencyMs: Math.max(0, endedAt - telemetry.startedAt),
+        ttftMs: firstContentAt ? Math.max(0, firstContentAt - telemetry.startedAt) : null,
+        tps: firstContentAt ? calcTps(finalUsage, telemetry.startedAt, firstContentAt, endedAt) : null,
+        queueMs: telemetry.queueMs,
+        attemptCount: telemetry.attemptCount,
+        attempts: telemetry.attempts,
       });
-      args.res?.setHeader('X-Fallback-Model', next);
-      return runCompletion({ ...args, model: next, fallbackDepth: 1 });
     }
-    return first;
   }
 
   const server = http.createServer({ maxHeaderSize: 64 * 1024 }, async (req, res) => {
+    const requestStartedAt = Date.now();
     // 请求 ID 从一开始就定下来：客户端报错时把这行响应头贴过来，
     // 就能在日志里精确找到这一次请求（seq 进程重启会归零，rid 不会）。
     const rid = nextRequestId();
@@ -1498,6 +1621,31 @@ export function createApp(ctx) {
       if (config.admin?.enabled !== false && (pathname === '/' || pathname === '/admin' || pathname === '/admin/')) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
         res.end(adminHtml());
+        return;
+      }
+
+      if ((pathname === '/admin/api/usage' || pathname === '/admin/api/usage/export.csv') && req.method === 'GET') {
+        try {
+          const filters = usageFiltersFromQuery(query);
+          if (pathname.endsWith('/export.csv')) {
+            const out = exportUsageCsv(usage, filters);
+            res.writeHead(200, {
+              'Content-Type': 'text/csv; charset=utf-8',
+              'Content-Disposition': 'attachment; filename="usage-' + out.range.from + '-' + out.range.to + '.csv"',
+              'Cache-Control': 'no-store',
+              'X-Content-Type-Options': 'nosniff',
+              'X-Usage-Records': String(out.count),
+              'X-Usage-Partial': String(!!out.coverage.partial),
+            });
+            res.end(out.csv);
+          } else {
+            res.setHeader('Cache-Control', 'no-store');
+            sendJson(res, 200, usage.query(filters));
+          }
+        } catch (err) {
+          if (!(err instanceof TypeError) && !(err instanceof RangeError)) throw err;
+          sendJson(res, 400, { error: { code: 'invalid_usage_filter', message: err.message } });
+        }
         return;
       }
 
@@ -2510,6 +2658,7 @@ export function createApp(ctx) {
           endpoint: pathname,
           abortSignal: abortController.signal,
           requestId: rid,
+          requestStartedAt,
         });
         if (result) sendJson(res, result.status, result.body);
         return;
@@ -2557,6 +2706,7 @@ export function createApp(ctx) {
           endpoint: pathname,
           abortSignal: abortController.signal,
           requestId: rid,
+          requestStartedAt,
         });
         if (result) sendJson(res, result.status, result.body);
         return;

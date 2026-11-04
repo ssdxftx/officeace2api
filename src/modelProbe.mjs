@@ -74,9 +74,10 @@ export class ModelProbe {
       this.lastProbeAt = Number(raw?.lastProbeAt) || 0;
       this.probedWithCredentials = String(raw?.probedWithCredentials || '');
       if (this.unavailable.size) {
+        // 不要把整串 ISO 时间戳铺进日志：一行里真正有用的是「11 个打不通、多久前测的」。
         this.log.info('已从磁盘读回模型可用性探测结果', {
           unavailable: this.unavailable.size,
-          at: this.lastProbeAt ? new Date(this.lastProbeAt).toISOString() : null,
+          ageMinutes: this.lastProbeAt ? Math.max(0, Math.round((Date.now() - this.lastProbeAt) / 60000)) : null,
         });
       }
     } catch {
@@ -308,6 +309,8 @@ export class ModelProbe {
           ok: row.ok,
           stream: false,
           endpoint: '/admin/api/models/probe',
+          // 自检不是用户请求：UsageStore 看到 probe 会直接丢掉，不进「用量」和「调用记录」。
+          probe: true,
           credential: cred.baseUrl,
           latencyMs: row.ms,
           error: row.ok ? '' : row.code,

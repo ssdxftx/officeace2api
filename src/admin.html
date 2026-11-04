@@ -213,6 +213,77 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .errrow .bar{flex:1}
 .errrow .n{width:48px;text-align:right;font-family:var(--mono);color:var(--fg);font-variant-numeric:tabular-nums}
 
+/* ---------- 用量观测 ---------- */
+[hidden]{display:none!important}
+main.usage-wide{max-width:none}
+.us-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.us-heading h2.pg{margin:0;font-size:22px;letter-spacing:-.02em}
+.us-heading .subtitle{margin:5px 0 0;font-size:12px;color:var(--dim)}
+.us-heading .row{margin-top:3px}
+.us-filters{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:14px 16px}
+.us-filters label{display:flex;flex:1;min-width:135px;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.us-filters select{font-size:13px;height:37px}
+.us-filters .dates{display:flex;gap:8px;flex:1.8;min-width:280px}
+.us-filters .dates label{min-width:125px}
+.us-filters input{height:37px;font-size:13px}
+.us-reset{font-size:12px;margin-bottom:3px;padding:6px 9px!important}
+.us-scope{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin:0 0 12px}
+.us-scope .live{width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.us-scope .sp{flex:1}
+.us-coverage{border:1px solid var(--line-a);background:var(--bg-a);color:var(--ink-a);padding:9px 13px;border-radius:9px;font-size:12px;line-height:1.7;margin-bottom:14px}
+.us-coverage.warn{border-color:var(--line-warn);background:var(--bg-warn);color:var(--warn)}
+#usCards{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:0;margin-bottom:16px}
+#usCards .card{background:var(--panel);box-shadow:var(--shadow);border-color:var(--line);padding:16px}
+#usCards .card:first-child{border-top:3px solid var(--accent);padding-top:14px}
+#usCards .k{font-size:12px}
+#usCards .v{font-size:26px;font-weight:650;letter-spacing:-.03em;margin:8px 0 5px}
+#usCards .v.sm{font-size:22px}
+#usCards .s{line-height:1.6;min-height:18px}
+.us-section-head{flex-wrap:wrap;font-size:14px!important;letter-spacing:0!important;padding:13px 16px!important}
+.us-section-head small{font-weight:400;color:var(--dim);font-size:12px}
+.us-chart-wrap{overflow-x:auto;padding:8px 14px 4px}
+.us-chart{width:100%;height:226px;display:block;min-width:600px}
+.us-chart text{font:11px var(--sans);fill:var(--dim)}
+.us-chart .us-bar:hover rect,.us-chart .us-bar:focus rect{filter:brightness(.93)}
+.us-chart .us-bar:focus{outline:none}
+.us-chart .us-bar:focus rect{stroke:var(--accent);stroke-width:2}
+.us-chart .tick{stroke:var(--line2);stroke-dasharray:3 4}
+.us-chart-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:2px 18px 15px;font-size:12px;color:var(--muted)}
+.us-chart-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.us-chart-legend .sp{flex:1}
+.us-performance{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:15px 0}
+.us-perf{padding:0 18px;border-right:1px solid var(--line2)}
+.us-perf:last-child{border-right:0}
+.us-perf .k{font-size:12px;color:var(--muted)}
+.us-perf .v{font:600 23px/1.8 var(--mono);font-variant-numeric:tabular-nums;color:var(--fg)}
+.us-perf .v small{font:400 11px var(--sans);color:var(--dim);margin-left:6px}
+.us-perf .s{font-size:11.5px;color:var(--dim);line-height:1.7}
+.us-health{padding:12px 16px;color:var(--ok);font-size:13px;display:flex;align-items:center;gap:8px}
+.us-health small{color:var(--dim);margin-left:auto;font-size:12px}
+.us-error-summary{cursor:pointer;padding:12px 16px;font-size:13px;color:var(--err);font-weight:550}
+.us-table{font-size:13px}
+.us-table table{min-width:900px;font-size:13px}
+.us-table thead th{font-size:12px;letter-spacing:0}
+.us-table tbody td{padding:12px}
+.us-table .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.us-table button.model-link{background:none;color:var(--accent);padding:0;font-size:12px;max-width:300px;white-space:normal;text-align:left;word-break:break-all}
+.us-table button.model-link:hover{text-decoration:underline}
+.us-share{display:flex;align-items:center;gap:10px;min-width:115px}
+.us-share .bar{flex:1;min-width:60px}.us-share>span{min-width:45px;text-align:right;font-size:12px;color:var(--muted)}
+.us-sort{width:auto;max-width:170px;padding:5px 8px;font-size:12px}
+.us-pager{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 15px;border-top:1px solid var(--line2);font-size:12px;color:var(--muted)}
+.us-pager .sp{flex:1}.us-pager select{width:90px;padding:4px 8px;font-size:12px}
+.us-method{padding:11px 15px;font-size:12px;color:var(--dim);line-height:1.8}
+.us-method summary{cursor:pointer;color:var(--muted)}
+.us-method ul{margin:8px 0;padding-left:20px}
+.us-pending{opacity:.55;pointer-events:none}
+.us-call-meta{font-size:11px;color:var(--dim);line-height:1.7;margin-top:3px;max-width:250px;overflow-wrap:anywhere}
+.us-call-id{font-family:var(--mono);font-size:11px;white-space:nowrap}
+#p-calls.cont>h2.pg{font-size:15px;color:var(--fg);letter-spacing:0;border:0;padding:0;margin-top:4px}
+@media(min-width:1700px){main.usage-wide{padding-right:32px;padding-left:28px}#usCards .v{font-size:30px}}
+@media(max-width:1180px){#usCards{grid-template-columns:repeat(3,minmax(0,1fr))}.us-performance{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:16px}.us-perf:nth-child(2){border-right:0}}
+@media(max-width:760px){#usCards{grid-template-columns:repeat(2,minmax(0,1fr))}#usCards .v{font-size:22px}.us-filters label{min-width:130px}.us-heading h2.pg{font-size:19px}.us-perf{padding:0 12px}.us-perf .v{font-size:20px}.us-heading .row{width:100%}.us-section-head>.seg{margin-left:auto}}
+
 /* 积分额度：大字卡片，一眼看懂还剩多少 */
 .cr{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
 .crc{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 16px}
@@ -339,7 +410,7 @@ button.danger:hover{background:var(--bg-err);border-color:var(--err);color:var(-
 .sw.on{background:var(--accent)}
 .sw i{position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(16,20,32,.25)}
 .sw.on i{left:19.5px}
-@media(max-width:900px){aside{width:56px}.brand span,aside .foot,nav a span,nav a.ext em{display:none}nav a{justify-content:center}main{padding:14px}}
+@media(max-width:900px){aside{width:56px}.brand span,aside .foot,nav a span,nav a.ext em{display:none}.brand{padding:16px 10px}.brand b{font-size:0;text-align:center}.brand b::after{content:"O²";font-size:19px;color:var(--accent)}nav a{justify-content:center}main{padding:14px}.us-filters .dates{min-width:0;flex-basis:100%;flex-wrap:wrap}#p-calls>h2.pg{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -372,7 +443,7 @@ button.danger:hover{background:var(--bg-err);border-color:var(--err);color:var(-
       <div class="body row">
         <button class="ghost" id="btnRediscover">重新发现凭据</button>
         <button class="ghost" id="btnUpstream">刷新上游模型</button>
-        <button class="ghost" id="btnUsageReset">重置统计</button>
+        <button class="ghost" id="btnUsageReset">归档并重置统计</button>
         <button class="ghost" id="btnLogsClear">清空日志</button>
         <span class="muted" id="opTip"></span>
       </div>
@@ -728,33 +799,66 @@ button.danger:hover{background:var(--bg-err);border-color:var(--err);color:var(-
     </section>
   </div>
 
-  <!-- 用量 -->
+  <!-- 用量：全部卡片、图表、分组与明细使用同一份查询 -->
   <div class="page" id="p-usage">
-    <h2 class="pg">用量统计 <small id="usSub"></small><span style="flex:1"></span><button class="ghost" id="usReset">重置</button></h2>
-    <section><div class="body grid" id="usCards"></div></section>
+    <div class="us-heading">
+      <div><h2 class="pg">用量与性能</h2><p class="subtitle">看清每一次请求的用量、等待与生成速度</p></div>
+      <div class="row"><a href="#credits" class="muted" style="font-size:12px;margin-right:6px">积分账单 ↗</a><button class="ghost" id="usExport">导出 CSV</button><button id="usRefresh">刷新数据</button></div>
+    </div>
     <section>
-      <h3>近 7 天<span class="sp"></span><span class="muted" id="usTrendSub"></span></h3>
-      <div class="body"><div class="trend" id="usTrend"></div></div>
+      <div class="us-filters">
+        <label>时间范围<select id="usRange"><option value="today">今天</option><option value="7d" selected>近 7 天</option><option value="30d">近 30 天</option><option value="all">全部保留记录</option><option value="custom">自定义</option></select></label>
+        <div class="dates" id="usCustomDates" hidden><label>开始日期<input id="usFrom" type="date" /></label><label>结束日期<input id="usTo" type="date" /></label></div>
+        <label>流量来源<select id="usSource"><option value="proxy">API 请求</option><option value="probe">模型探测</option><option value="admin">管理请求</option><option value="all">全部来源</option></select></label>
+        <label>模型 / 别名<select id="usModel"><option value="">全部模型</option></select></label>
+        <label>账号<select id="usAccount"><option value="">全部账号</option></select></label>
+        <label>API Key<select id="usKey"><option value="">全部 Key</option></select></label>
+        <button class="ghost us-reset" id="usReset">重置筛选</button>
+      </div>
     </section>
-    <section>
-      <h3>失败原因<span class="sp"></span><span class="muted" id="usErrSub"></span></h3>
-      <div class="body" id="usErrors"></div>
-    </section>
-    <section><h3>按模型</h3><div class="body scroll" id="usModels"></div></section>
-    <section><h3>按 API Key</h3><div class="body scroll" id="usKeys"></div></section>
+    <div class="us-scope"><span class="live"></span><span id="usSub">正在读取用量…</span><span class="sp"></span><span id="usUpdated" aria-live="polite"></span></div>
+    <div class="us-coverage" id="usCoverage" hidden></div>
+    <div id="usDashboard">
+      <div class="grid" id="usCards"></div>
+      <section>
+        <h3 class="us-section-head">用量趋势 <small id="usTrendSub"></small><span class="sp"></span><div class="seg" id="usMetric"><button data-metric="requests" class="on">请求数</button><button data-metric="tokens">Tokens</button><button data-metric="cached_tokens">缓存 Tokens</button></div></h3>
+        <div class="us-chart-wrap" id="usTrend"></div><div class="us-chart-legend" id="usLegend"></div>
+      </section>
+      <section>
+        <h3 class="us-section-head">请求性能 <small>有效观测值 · P50 / P95</small><span class="sp"></span><small>历史未采集指标显示 —</small></h3>
+        <div class="us-performance" id="usPerformance"></div>
+      </section>
+      <section>
+        <div class="us-health" id="usHealthy">✓ 当前筛选没有服务失败<small>取消请求单独统计</small></div>
+        <details id="usErrorDetails" hidden><summary class="us-error-summary">失败原因 <span id="usErrSub"></span></summary><div class="body" id="usErrors"></div></details>
+      </section>
+      <section>
+        <h3 class="us-section-head">按模型 <small id="usModelsSub"></small><span class="sp"></span><label for="usSort" class="dim" style="font-size:12px;font-weight:400">排序</label><select id="usSort" class="us-sort"><option value="requests">请求数 · 从高到低</option><option value="total_tokens">Tokens · 从高到低</option><option value="latency">耗时 P95 · 从高到低</option><option value="ttft">首 Token P95 · 从高到低</option></select></h3>
+        <div class="body scroll us-table" id="usModels"></div>
+      </section>
+      <section>
+        <h3 class="us-section-head">分组统计<span class="sp"></span><div class="seg" id="usGroup"><button data-group="accounts" class="on">按账号</button><button data-group="keys">按 API Key</button></div></h3>
+        <div class="body scroll us-table" id="usAccounts"></div><div class="body scroll us-table" id="usKeys" hidden></div>
+      </section>
+      <section><details class="us-method"><summary>统计口径与历史数据</summary><ul>
+        <li>卡片、趋势、分组和调用记录共用筛选条件；默认仅统计 API 请求，模型探测单独查看。日期以页面标注的服务器时区为准。</li>
+        <li>成功率 = 成功 ÷（成功 + 失败）；客户端取消单独计数。上游尝试包含重试与模型兜底，不等于客户端请求数。</li>
+        <li>总 Tokens = 已知输入 + 已知输出；缓存是输入的子集，不重复累计。重试中的已知 usage 可在请求诊断中查看，未上报用量不估算。</li>
+        <li>首 Token 从请求开始到首个正文、推理或工具调用内容；仅角色帧、心跳和 usage 帧不算。非流式的 TTFT / 生成速度留空。</li>
+        <li>积分来自上游账号账单，与请求明细口径不同，请从右上角「积分账单」查看，不按模型或 Key 虚构分摊。</li>
+      </ul><div id="usHistory"></div></details></section>
+    </div>
   </div>
 
   <!-- 调用记录 -->
   <div class="page" id="p-calls">
-    <h2 class="pg">调用记录 <small>最近 200 条</small>
+    <h2 class="pg">调用记录 <small id="callSub"></small>
       <span style="flex:1"></span>
       <div class="seg" id="callFilter">
-        <button data-f="all" class="on">全部</button>
-        <button data-f="ok">成功</button>
-        <button data-f="fail">失败</button>
+        <button data-f="all" class="on">全部</button><button data-f="ok">成功</button><button data-f="failed">失败</button><button data-f="cancelled">已取消</button>
       </div>
     </h2>
-    <section><div class="body scroll" id="callBody"></div></section>
+    <section><div class="body scroll us-table" id="callBody"></div><div class="us-pager"><span id="callPageInfo">—</span><span class="sp"></span><label for="callPageSize">每页</label><select id="callPageSize"><option value="25">25 条</option><option value="50" selected>50 条</option><option value="100">100 条</option><option value="200">200 条</option></select><button class="ghost mini" id="callPrev" disabled>上一页</button><button class="ghost mini" id="callNext" disabled>下一页</button></div></section>
   </div>
 
   <!-- 日志 -->
@@ -1059,6 +1163,7 @@ async function poll() {
     const h = $("#ovHealth");
     if (h) { h.className = "pill ok"; h.textContent = "运行中"; }
     renderAll();
+    if (shows("usage")) await loadUsage();
   } catch (err) {
     setFoot("离线", "err");
     const h = $("#ovHealth");
@@ -1087,7 +1192,8 @@ function renderAll() {
 function renderOverview() {
   const t = (S.usage && S.usage.totals) || {};
   const cs = creditsState(), sm = cs.summary || {};
-  const okRate = t.requests ? Math.round((t.ok / t.requests) * 100) : null;
+  const completedRequests = (t.ok || 0) + (t.failed || 0);
+  const okRate = completedRequests ? Math.round((t.ok / completedRequests) * 100) : null;
   const up = S.health.uptimeMs || 0;
   const unavail = new Set((S.health && S.health.modelsUnavailable) || []);
   const badModels = S.models.filter((m) => unavail.has(m.id)).length;
@@ -1113,13 +1219,13 @@ function renderOverview() {
     '<div class="k">刷新间隔</div><div class="v">' + esc((S.config.upstream && S.config.upstream.refreshSeconds) || "-") + " 秒</div>" +
     "</div>";
 
-  const recent = (S.recent || []).slice(0, 12);
+  const recent = (S.recent || []).filter((r) => !r.source || r.source === "proxy").slice(0, 12);
   $("#ovRecent").innerHTML = recent.length ? tbl(
     ["时间", "模型", "结果", "耗时", "tokens", "错误"],
     recent.map((r) => [
       '<span class="dim">' + esc(hhmmss(r.ts)) + "</span>",
       "<code>" + esc(r.model) + "</code>",
-      r.ok ? '<span class="tag ok">OK</span>' : '<span class="tag err">FAIL</span>',
+      r.outcome === "cancelled" ? '<span class="tag warn">取消</span>' : r.ok ? '<span class="tag ok">OK</span>' : '<span class="tag err">FAIL</span>',
       '<span class="num">' + ms(r.latencyMs) + "</span>",
       '<span class="dim">' + num(r.prompt_tokens) + " / " + num(r.completion_tokens) + "</span>",
       r.ok ? '<span class="dim">-</span>' :
@@ -1729,80 +1835,220 @@ function renderCreds() {
 }
 
 /* ---------------- 用量 ---------------- */
-function renderUsage() {
-  const u = S.usage || {}, t = u.totals || {};
-  const models = Object.entries(u.byModel || {}).sort((a, b) => b[1].requests - a[1].requests);
-  const keys = Object.entries(u.byApiKey || {});
-  $("#usSub").textContent = u.since ? "统计自 " + new Date(u.since).toLocaleString("zh-CN") : "";
-  const cached = Number(t.cached_tokens) || 0;
-  const cachedPct = t.prompt_tokens ? Math.round((cached / t.prompt_tokens) * 100) : 0;
-  const okRate = t.requests ? Math.round((t.ok / t.requests) * 100) : null;
-  $("#usCards").innerHTML = [
-    ["请求总数", num(t.requests || 0), "成功 " + num(t.ok || 0) + " / 失败 " + num(t.failed || 0), t.failed ? "warn" : ""],
-    ["成功率", okRate === null ? "—" : okRate + "%", okRate === null ? "还没有请求" : (okRate >= 95 ? "正常" : "有失败，看下方原因"), okRate === null ? "" : (okRate >= 95 ? "ok" : "warn")],
-    ["总 tokens", num(t.total_tokens || 0), "输入 " + num(t.prompt_tokens || 0) + " / 输出 " + num(t.completion_tokens || 0), ""],
-    ["缓存命中", cachedPct + "%", "cached " + num(cached), cachedPct > 0 ? "ok" : ""],
-    ["覆盖模型", String(models.length), models.filter(([, m]) => m.ok).length + " 个成功调用过", ""],
-  ].map(([k, v, s, c]) => card(k, v, s, c)).join("");
-
-  // 近 7 天：按本机时区分桶，缺失的日期补 0。
-  const daily = u.daily || {};
-  const days = [];
-  for (let i = 6; i >= 0; i -= 1) {
-    const d = new Date();
-    d.setHours(12, 0, 0, 0);
-    d.setDate(d.getDate() - i);
-    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    days.push({
-      key,
-      label: (d.getMonth() + 1) + "/" + d.getDate(),
-      row: daily[key] || { requests: 0, ok: 0, failed: 0 },
-    });
+let U = null;
+let usageError = "";
+let usageSeq = 0;
+let usageAbort = null;
+let usageMetric = "requests";
+let usageGroup = "accounts";
+const usageFilter = { range: "7d", source: "proxy", model: "", accountId: "", apiKeyId: "", outcome: "all", limit: 50, offset: 0 };
+const measured = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
+const metricMs = (v) => measured(v) ? ms(Number(v)) : "—";
+const pct = (n, d) => d > 0 ? (100 * n / d).toFixed(1).replace(/\.0$/, "") + "%" : "—";
+const compactNum = (v) => v >= 1e6 ? (v / 1e6).toFixed(1) + "M" : v >= 1000 ? (v / 1000).toFixed(1) + "K" : String(Math.round(v));
+function localDay(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function usageParams(paged) {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(usageFilter)) {
+    if (!paged && (k === "limit" || k === "offset")) continue;
+    if (usageFilter.range !== "custom" && (k === "from" || k === "to")) continue;
+    if (v !== "" && v !== null && v !== undefined) p.set(k, String(v));
   }
-  const weekReq = days.reduce((n, d) => n + d.row.requests, 0);
-  $("#usTrendSub").textContent = weekReq ? "近 7 天 " + num(weekReq) + " 次请求" : "";
-  const trendEl = $("#usTrend");
-  trendEl.style.height = weekReq ? "" : "auto";
-  const maxDay = Math.max(1, ...days.map((d) => d.row.requests));
-  $("#usTrend").innerHTML = weekReq ? days.map((d) => {
-    const r = d.row;
-    // 柱子总高按当天请求量算；红绿按成功/失败占比切分。
-    // 以前每根柱子都铺满 92px 灰底，少的那截看起来像「另一种状态」。
-    const totalH = Math.round((r.requests / maxDay) * 92);
-    const badH = r.requests ? Math.round((r.failed / r.requests) * totalH) : 0;
-    const okH = Math.max(0, totalH - badH);
-    return '<div class="day" title="' + d.key + "：" + r.requests + " 次请求，失败 " + r.failed + '">' +
-      '<div class="n">' + (r.requests || "") + "</div>" +
-      '<div class="col"><i class="bad" style="height:' + badH + 'px"></i><i class="ok" style="height:' + okH + 'px"></i></div>' +
-      '<div class="d">' + d.label + "</div></div>";
-  }).join("") : empty("还没有按天数据；新版统计从下一次请求开始记。");
-
-  // 失败原因：把 401/429/超时/网络这些分开，别只给一个「失败 12」。
+  return p.toString();
+}
+function fillUsageOptions(id, choices, selected, allLabel) {
+  const select = $(id);
+  const values = choices.map((c) => typeof c === "string" ? { id: c, label: c } : c);
+  if (selected && !values.some((v) => v.id === selected)) values.push({ id: selected, label: selected });
+  const html = '<option value="">' + esc(allLabel) + '</option>' + values.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.label || c.id) + '</option>').join("");
+  if (select.innerHTML !== html) select.innerHTML = html;
+  select.value = selected;
+}
+async function loadUsage() {
+  if (!S || !shows("usage")) return;
+  const seq = ++usageSeq;
+  if (usageAbort) usageAbort.abort();
+  usageAbort = new AbortController();
+  $("#usUpdated").textContent = "更新中…";
+  $("#usDashboard").setAttribute("aria-busy", "true");
+  try {
+    const data = await api("admin/api/usage?" + usageParams(true), { signal: usageAbort.signal });
+    if (seq !== usageSeq) return;
+    // A reset or retention trim can make the current page disappear.
+    if (data.page.total > 0 && usageFilter.offset >= data.page.total) {
+      usageFilter.offset = Math.floor((data.page.total - 1) / usageFilter.limit) * usageFilter.limit;
+      return loadUsage();
+    }
+    U = data;
+    usageError = "";
+    const facets = data.facets || {};
+    fillUsageOptions("#usModel", facets.models || [], usageFilter.model, "全部模型");
+    fillUsageOptions("#usAccount", (facets.accounts || []).map((a) => {
+      const account = accounts().find((x) => String(x.id) === String(a.id));
+      return { id: a.id, label: account ? account.label || account.short || a.id : a.label || a.id };
+    }), usageFilter.accountId, "全部账号");
+    fillUsageOptions("#usKey", facets.apiKeys || [], usageFilter.apiKeyId, "全部 Key");
+    $("#usUpdated").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN");
+    renderUsage();
+    renderCalls();
+  } catch (err) {
+    if (seq !== usageSeq || err.name === "AbortError") return;
+    usageError = err.message;
+    U = null;
+    $("#usUpdated").textContent = "更新失败";
+    renderUsage(); renderCalls();
+  } finally {
+    if (seq === usageSeq) $("#usDashboard").setAttribute("aria-busy", "false");
+  }
+}
+function changeUsageFilters() {
+  usageFilter.offset = 0;
+  U = null;
+  usageError = "";
+  $("#usCustomDates").hidden = usageFilter.range !== "custom";
+  if (usageFilter.range === "custom") {
+    const now = new Date(), from = new Date(); from.setDate(now.getDate() - 6);
+    if (!$("#usFrom").value) $("#usFrom").value = localDay(from);
+    if (!$("#usTo").value) $("#usTo").value = localDay(now);
+    usageFilter.from = $("#usFrom").value;
+    usageFilter.to = $("#usTo").value;
+    if (usageFilter.from > usageFilter.to) {
+      usageError = "开始日期应早于或等于结束日期";
+      if (usageAbort) usageAbort.abort();
+      ++usageSeq;
+      renderUsage(); renderCalls(); return;
+    }
+  }
+  renderUsage(); renderCalls(); loadUsage();
+}
+function usageRowsTable(rows, titleKind) {
+  return rows.length ? tbl([titleKind, "请求数", "成功 / 失败 / 取消", "Tokens", "输入缓存率", "首 Token P95", "总耗时 P95"], rows.map(([id, r]) => {
+    const account = titleKind === "账号" ? accounts().find((a) => String(a.id) === id) : null;
+    const label = account ? account.label || account.short || id : r.label || id;
+    return [
+      '<button class="model-link" data-usage-' + (titleKind === "账号" ? "account" : "key") + '="' + esc(id) + '">' + esc(label || "未采集") + '</button>',
+      '<span class="num">' + num(r.requests) + '</span>',
+      '<span class="num">' + num(r.ok || 0) + ' / ' + num(r.failed || 0) + ' / ' + num(r.cancelled || 0) + '</span>',
+      '<span class="num">' + num(r.total_tokens) + '</span>',
+      '<span class="num">' + pct(r.cached_tokens || 0, r.prompt_tokens || 0) + '</span>',
+      '<span class="num">' + metricMs(r.performance?.ttftMs?.p95) + '</span>',
+      '<span class="num">' + metricMs(r.performance?.latencyMs?.p95) + '</span>',
+    ];
+  })) : empty("当前筛选没有分组记录");
+}
+function renderUsageTrend(u) {
+  const from = new Date(u.range.from + "T12:00:00"), to = new Date(u.range.to + "T12:00:00");
+  const days = [];
+  // query only retains 30 days; large custom ranges are shown with a bounded tail.
+  const cursor = new Date(from), last = new Date(to); last.setDate(last.getDate() - 30);
+  if (cursor < last) cursor.setTime(last.getTime());
+  const coverage = u.coverage || {};
+  const recordedDay = coverage.recordedSince ? localDay(new Date(coverage.recordedSince)) : (coverage.earliestRecordAt ? localDay(new Date(coverage.earliestRecordAt)) : localDay(new Date()));
+  let today = localDay(new Date());
+  try {
+    const p = new Intl.DateTimeFormat("en-CA", { timeZone: coverage.timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+    const part = (k) => p.find((x) => x.type === k)?.value;
+    today = part("year") + "-" + part("month") + "-" + part("day");
+  } catch (_) { /* browser timezone fallback */ }
+  for (; cursor <= to && days.length <= 31; cursor.setDate(cursor.getDate() + 1)) {
+    const key = localDay(cursor), row = (u.daily || {})[key];
+    days.push({ key, label: (cursor.getMonth() + 1) + "/" + cursor.getDate(), row: row || {}, known: !!row || (key >= recordedDay && key <= today && (!coverage.windowStart || key >= coverage.windowStart.slice(0, 10))) });
+  }
+  const fields = usageMetric === "tokens" ? [["prompt_tokens", "输入", "var(--accent)"], ["completion_tokens", "输出", "#159a91"]] : usageMetric === "cached_tokens" ? [["cached_tokens", "缓存输入", "var(--accent)"]] : [["ok", "成功", "var(--ok)"], ["failed", "失败", "var(--err)"], ["cancelled", "取消", "#d59d32"]];
+  const valueOf = (d) => fields.reduce((sum, [key]) => sum + (Number(d.row[key]) || 0), 0);
+  const max = Math.max(1, ...days.map(valueOf));
+  const width = Math.max(600, Math.round($("#usTrend").clientWidth - 28), days.length * 33), height = 226, left = 54, right = 18, top = 20, bottom = 39;
+  const plotH = height - top - bottom, slot = (width - left - right) / Math.max(1, days.length), barW = Math.min(43, slot * .5);
+  const grids = [0, .25, .5, .75, 1].map((f) => {
+    const y = top + plotH * (1 - f);
+    return '<line class="tick" x1="' + left + '" y1="' + y + '" x2="' + (width - right) + '" y2="' + y + '"/><text x="' + (left - 10) + '" y="' + (y + 4) + '" text-anchor="end">' + compactNum(max * f) + '</text>';
+  }).join("");
+  const bars = days.map((d, i) => {
+    const x = left + slot * (i + .5), total = valueOf(d);
+    const tip = d.key + " · " + (d.known ? fields.map(([key, label]) => label + " " + num(d.row[key] || 0)).join(" / ") : "未采集或已超出明细保留窗口");
+    let y = top + plotH;
+    const rects = d.known ? fields.map(([key, , color]) => {
+      const h = (Number(d.row[key]) || 0) / max * plotH;
+      y -= h;
+      return h > 0 ? '<rect x="' + (x - barW / 2) + '" y="' + y + '" width="' + barW + '" height="' + h + '" rx="2" fill="' + color + '"/>' : "";
+    }).join("") : '<rect x="' + (x - barW / 2) + '" y="' + (top + plotH - 7) + '" width="' + barW + '" height="7" rx="2" fill="url(#usUnknown)"/>';
+    const showLabel = days.length <= 16 || i % 3 === 0 || i === days.length - 1;
+    return '<g class="us-bar" tabindex="0" role="img" aria-label="' + esc(tip) + '"><title>' + esc(tip) + '</title>' + rects +
+      (d.known && total === 0 ? '<circle cx="' + x + '" cy="' + (top + plotH) + '" r="2" fill="var(--line)"/>' : '') +
+      (days.length <= 16 ? '<text x="' + x + '" y="' + (d.known && total > 0 ? Math.max(13, y - 6) : top + plotH - 12) + '" text-anchor="middle">' + (d.known ? compactNum(total) : "—") + '</text>' : '') +
+      (showLabel ? '<text x="' + x + '" y="' + (height - 13) + '" text-anchor="middle">' + d.label + '</text>' : '') + '</g>';
+  }).join("");
+  $("#usTrend").innerHTML = '<svg class="us-chart" style="min-width:' + Math.max(600, days.length * 33) + 'px" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="当前筛选用量趋势"><title>按天统计，斜纹表示未采集，圆点表示零值</title><defs><pattern id="usUnknown" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="5" fill="var(--line)"/></pattern></defs>' + grids + bars + '</svg>';
+  $("#usTrendSub").textContent = (days.length && localDay(from) !== days[0].key ? "仅展示所选区间末尾 31 天 · " : "") + num(u.totals.requests || 0) + " 次请求";
+  $("#usLegend").innerHTML = fields.map(([, label, color]) => '<span><i style="background:' + color + '"></i>' + label + '</span>').join("") + '<span class="sp"></span><span>— 未采集 / 超出保留窗口 · 数值按日汇总</span>';
+}
+function renderUsage() {
+  $("#usDashboard").classList.toggle("us-pending", !U);
+  $("#usExport").disabled = !U || !U.page.total;
+  if (!U) {
+    $("#usSub").textContent = usageError ? "用量数据暂未更新" : "正在读取所选范围…";
+    $("#usCoverage").hidden = !usageError;
+    $("#usCoverage").className = "us-coverage warn";
+    $("#usCoverage").textContent = usageError;
+    $("#usCards").innerHTML = ["客户端请求", "成功率", "Token 用量", "输入缓存率", "上游尝试"].map((k) => card(k, "—", "等待数据", "")).join("");
+    $("#usTrend").innerHTML = empty(usageError ? "请检查日期或点击刷新重试" : "加载用量趋势…");
+    $("#usLegend").innerHTML = "";
+    $("#usPerformance").innerHTML = "";
+    $("#usModels").innerHTML = empty("等待所选范围的数据");
+    $("#usAccounts").innerHTML = ""; $("#usKeys").innerHTML = "";
+    return;
+  }
+  const u = U, t = u.totals || {}, perf = u.performance || {}, coverage = u.coverage || {};
+  const rate = pct(t.ok || 0, (t.ok || 0) + (t.failed || 0));
+  const cacheRate = pct(t.cached_tokens || 0, t.prompt_tokens || 0);
+  const source = { proxy: "API 请求", probe: "模型探测", admin: "管理请求", all: "全部来源" }[usageFilter.source];
+  const outcome = { all: "全部结果", ok: "成功", failed: "失败", cancelled: "已取消" }[usageFilter.outcome];
+  $("#usSub").textContent = u.range.from + " — " + u.range.to + " · " + source + " · " + outcome + " · " + (coverage.timeZone || "服务器本地时区");
+  $("#usCoverage").hidden = !coverage.partial;
+  $("#usCoverage").className = "us-coverage warn";
+  $("#usCoverage").textContent = "部分历史明细未采集或已超过保留期限，本页只汇总现存记录。未采集的性能显示 —，历史累计仍保留。";
+  $("#usCards").innerHTML = [
+    ["客户端请求", num(t.requests || 0), "成功 " + num(t.ok || 0) + " / 失败 " + num(t.failed || 0) + " / 取消 " + num(t.cancelled || 0), ""],
+    ["成功率", rate, "取消请求不计入成功率分母", t.failed ? "warn" : rate === "—" ? "" : "ok"],
+    ["已知 Tokens", t.total_tokens > 0 || t.usageKnownRequests ? num(t.total_tokens || 0) : "—", "完整用量 " + num(t.usageKnownRequests || 0) + " / " + num(t.requests || 0) + " 次", ""],
+    ["输入缓存率", cacheRate, "缓存 " + num(t.cached_tokens || 0) + " / 输入 " + num(t.prompt_tokens || 0), cacheRate === "—" ? "" : "ok"],
+    ["上游尝试", t.attemptKnownRequests ? num(t.attempts || 0) : "—", "已记录 " + num(t.attemptKnownRequests || 0) + " / " + num(t.requests || 0) + " 次请求 · 含重试", ""],
+  ].map(([k, v, s, c]) => card(k, v, s, c)).join("");
+  renderUsageTrend(u);
+  const performanceCards = [["首 Token", "ttftMs", "首个有效内容"], ["总耗时", "latencyMs", "完整请求耗时"], ["生成速度", "tps", "输出 Tokens/s"], ["排队时间", "queueMs", "获取账号的累计等待"]];
+  $("#usPerformance").innerHTML = performanceCards.map(([label, key, detail]) => {
+    const p = perf[key] || {}, speed = key === "tps";
+    const format = (v) => speed ? measured(v) ? num(Math.round(Number(v) * 10) / 10) : "—" : metricMs(v);
+    return '<div class="us-perf"><div class="k">' + label + '</div><div class="v">' + format(p.p50) + '<small>P50' + (speed ? " tok/s" : "") + '</small></div><div class="s">P95 <b>' + format(p.p95) + '</b> · 样本 ' + num(p.count || 0) + '<br>' + detail + '</div></div>';
+  }).join("");
   const errors = Object.entries(u.errors || {}).sort((a, b) => b[1] - a[1]);
+  const details = $("#usErrorDetails");
+  $("#usHealthy").hidden = !!t.failed;
+  details.hidden = !t.failed;
+  if (t.failed && details.dataset.failed !== "yes") details.open = true;
+  details.dataset.failed = t.failed ? "yes" : "no";
+  $("#usErrSub").textContent = " · " + num(t.failed || 0) + " 次";
   const maxErr = Math.max(1, ...errors.map(([, n]) => n));
-  $("#usErrSub").textContent = t.failed ? "共 " + num(t.failed) + " 次失败" : "";
-  $("#usErrors").innerHTML = errors.length ? errors.map(([k, n]) => (
-    '<div class="errrow"><span class="k">' + esc(k) + '</span>' +
-    '<div class="bar"><i class="err" style="width:' + Math.max(3, Math.round((n / maxErr) * 100)) + '%"></i></div>' +
-    '<span class="n">' + num(n) + "</span></div>"
-  )).join("") : empty(t.failed ? "失败记录产生于旧版本统计，下一次失败开始分类。" : "还没有失败记录。");
-
-  const maxReq = Math.max(1, ...models.map(([, m]) => m.requests));
-  $("#usModels").innerHTML = models.length ? tbl(
-    ["模型", "请求", "占比", "成功 / 失败", "tokens", "缓存", "平均延迟"],
-    models.map(([id, m]) => [
-      "<code>" + esc(id) + "</code>",
-      '<span class="num">' + num(m.requests) + "</span>",
-      '<div class="bar" style="min-width:80px"><i style="width:' + Math.max(2, Math.round((m.requests / maxReq) * 100)) + '%"></i></div>',
-      '<span class="num">' + num(m.ok) + " / " + (m.failed ? '<span style="color:var(--err)">' + num(m.failed) + "</span>" : "0") + "</span>",
-      '<span class="num dim">' + num(m.total_tokens) + "</span>",
-      '<span class="num dim">' + num(m.cached_tokens || 0) + "</span>",
-      '<span class="num">' + ms(m.avgLatencyMs) + "</span>",
-    ])
-  ) : empty("还没有用量数据");
-
-  $("#usKeys").innerHTML = keys.length ? tbl(["API Key", "请求", "tokens"],
-    keys.map(([k, v]) => ["<code>" + esc(k) + "</code>", '<span class="num">' + num(v.requests) + "</span>", '<span class="num dim">' + num(v.total_tokens) + "</span>"])) : empty("按 Key 统计会在调用后出现");
+  $("#usErrors").innerHTML = errors.length ? errors.map(([k, n]) => '<div class="errrow"><span class="k">' + esc(k) + '</span><div class="bar"><i class="err" style="width:' + Math.round(n / maxErr * 100) + '%"></i></div><span class="n">' + num(n) + '</span></div>').join("") : empty("历史记录尚无错误分类");
+  const sort = $("#usSort").value;
+  const sortValue = (m) => sort === "latency" ? m.performance?.latencyMs?.p95 ?? -1 : sort === "ttft" ? m.performance?.ttftMs?.p95 ?? -1 : Number(m[sort]) || 0;
+  const models = Object.entries(u.byModel || {}).sort((a, b) => sortValue(b[1]) - sortValue(a[1]) || a[0].localeCompare(b[0]));
+  $("#usModelsSub").textContent = models.length + " 个 · 点击模型筛选明细";
+  $("#usModels").innerHTML = models.length ? tbl(["实际模型", "请求数", "请求占比", "成功 / 失败 / 取消", "Tokens", "输入缓存率", "首 Token P95", "总耗时 P95"], models.map(([id, m]) => [
+    '<button class="model-link" data-usage-model="' + esc(id) + '">' + esc(id) + '</button>',
+    '<span class="num">' + num(m.requests) + '</span>',
+    '<div class="us-share"><div class="bar"><i style="width:' + (t.requests ? m.requests / t.requests * 100 : 0) + '%"></i></div><span>' + pct(m.requests, t.requests) + '</span></div>',
+    '<span class="num">' + num(m.ok || 0) + ' / ' + num(m.failed || 0) + ' / ' + num(m.cancelled || 0) + '</span>',
+    '<span class="num">' + (m.usageKnownRequests ? num(m.total_tokens || 0) : "—") + '</span>',
+    '<span class="num">' + pct(m.cached_tokens || 0, m.prompt_tokens || 0) + '</span>',
+    '<span class="num">' + metricMs(m.performance?.ttftMs?.p95) + '</span>',
+    '<span class="num">' + metricMs(m.performance?.latencyMs?.p95) + '</span>',
+  ])) : empty("当前筛选没有请求；可调整时间、来源或模型");
+  $("#usAccounts").innerHTML = usageRowsTable(Object.entries(u.byAccount || {}).sort((a, b) => b[1].requests - a[1].requests), "账号");
+  $("#usKeys").innerHTML = usageRowsTable(Object.entries(u.byApiKey || {}).sort((a, b) => b[1].requests - a[1].requests), "API Key");
+  $("#usAccounts").hidden = usageGroup !== "accounts"; $("#usKeys").hidden = usageGroup !== "keys";
+  const historical = u.historicalTotals || {};
+  $("#usHistory").textContent = "历史累计保留：" + num(historical.requests || 0) + " 次请求 / " + num(historical.total_tokens || 0) + " Tokens。筛选统计只汇总可追溯明细；当前保留 " + num(coverage.retainedRecords || 0) + " 条，最多 " + num(coverage.limit || 10000) + " 条 / " + (coverage.retentionDays || 30) + " 天。 " + (coverage.message || "");
 }
 
 /* ---------------- 调用记录 ---------------- */
@@ -1826,68 +2072,53 @@ function callAccount(r) {
  * `attempts` 是服务端这次请求真实换过的凭据，按顺序展开即可还原重试过程。
  */
 function callErrorCell(r) {
-  if (r.ok) return '<span class="dim">-</span>';
-  const code = r.errorCode ? '<span class="tag err">' + esc(r.errorCode) + "</span>" : "";
-  const rid = r.requestId ? '<code title="请求 ID">' + esc(r.requestId) + "</code>" : "";
-  const status = r.status
-    ? '<span class="pill">' + (r.status === 200 && !r.ok ? "流内错误" : "HTTP " + esc(r.status)) + "</span>"
-    : "";
   const attempts = Array.isArray(r.attempts) ? r.attempts : [];
-  const attemptHtml = attempts.length
-    ? '<details class="call-attempts"><summary>尝试 ' + attempts.length + " 次</summary>" +
-      attempts.map((a) =>
-        "<div><b>#" + esc(a.attempt || "?") + "</b> " +
-        (a.status ? esc(a.status) + " " : "") +
-        (a.code ? "<code>" + esc(a.code) + "</code> " : "") +
-        esc(cutText(a.error || "", 180)) +
-        "</div>").join("") +
-      "</details>"
-    : "";
-  return '<div class="call-err"><span class="msg" title="' + esc(r.error || "") + '">' +
-    esc(cutText(r.error || "未知错误", 220)) + "</span></div>" +
-    '<div class="call-meta">' + code + status + rid +
-    '<button class="ghost mini" data-diag="' + esc(JSON.stringify({
-      ts: r.ts,
-      model: r.model,
-      endpoint: r.endpoint,
-      ok: r.ok,
-      stream: r.stream,
-      status: r.status,
-      errorCode: r.errorCode,
-      requestId: r.requestId,
-      accountId: r.accountId,
-      credential: r.credential,
-      latencyMs: r.latencyMs,
-      error: r.error,
-      attempts,
-    })) + '">复制诊断</button></div>' + attemptHtml;
+  const diagnostic = {
+    ts: r.ts, requestId: r.requestId, requestedModel: r.requestedModel, resolvedModel: r.resolvedModel || r.model,
+    source: r.source, endpoint: r.endpoint, outcome: r.outcome || (r.ok ? "ok" : "failed"), stream: r.stream,
+    status: r.status, errorCode: r.errorCode, accountId: r.accountId, apiKeyId: r.apiKeyId,
+    latencyMs: r.latencyMs, ttftMs: r.ttftMs, queueMs: r.queueMs, tps: r.tps,
+    attemptCount: r.attemptCount, usageKnown: r.usageKnown,
+    prompt_tokens: r.prompt_tokens, completion_tokens: r.completion_tokens, cached_tokens: r.cached_tokens,
+    error: r.error, attempts,
+  };
+  const summary = !r.ok && r.error ? '<div class="call-err"><span class="msg" title="' + esc(r.error) + '">' + esc(cutText(r.error, 100)) + '</span></div>' : '';
+  const chain = attempts.length ? attempts.map((a) => '<div><b>#' + esc(a.attempt || "?") + '</b> ' + esc(a.model || "") + ' ' + (a.status ? 'HTTP ' + esc(a.status) + ' ' : '') + (a.code ? '<code>' + esc(a.code) + '</code> ' : '') + esc(cutText(a.error || "", 180)) + (a.usage ? '<br>已知 usage：' + esc(JSON.stringify(a.usage)) : '') + '</div>').join("") : '<div>没有可展示的重试记录</div>';
+  return summary + '<details class="call-attempts" data-request-id="' + esc(r.requestId || [r.ts, r.model, r.accountId].join('|')) + '"><summary>请求详情' + (r.attemptCount > 1 ? ' · 尝试 ' + num(r.attemptCount) + ' 次' : '') + '</summary><div>请求 ID：<span class="us-call-id">' + esc(r.requestId || "历史未采集") + '</span><br>请求模型：' + esc(r.requestedModel || r.model) + '<br>实际模型：' + esc(r.resolvedModel || r.model) + '<br>排队：' + metricMs(r.queueMs) + ' · 生成速度：' + (measured(r.tps) ? num(r.tps) + ' tok/s' : '—') + '<br>缓存输入：' + num(r.cached_tokens) + ' Tokens</div>' + chain + '</details><button class="ghost mini" data-diag="' + esc(JSON.stringify(diagnostic)) + '" style="margin-top:5px">复制诊断</button>';
 }
 
 function renderCalls() {
-  let list = S.recent || [];
-  if (callFilter === "ok") list = list.filter((r) => r.ok);
-  if (callFilter === "fail") list = list.filter((r) => !r.ok);
+  if (!U) {
+    $("#callBody").innerHTML = empty(usageError ? "请求明细暂未更新" : "正在读取请求明细…");
+    $("#callSub").textContent = ""; $("#callPageInfo").textContent = "—";
+    $("#callPrev").disabled = true; $("#callNext").disabled = true;
+    return;
+  }
+  const openDetails = new Set($$("#callBody details[open]").map((el) => el.dataset.requestId));
+  const callScrollTop = $("#callBody").scrollTop;
+  const list = U.recent || [], p = U.page;
+  $("#callSub").textContent = "与上方筛选一致 · " + num(p.total) + " 条";
+  $("#callPageInfo").textContent = p.total ? (p.offset + 1) + "–" + Math.min(p.offset + p.limit, p.total) + " / " + num(p.total) + " 条" : "0 条记录";
+  $("#callPrev").disabled = p.offset <= 0;
+  $("#callNext").disabled = p.offset + p.limit >= p.total;
   $("#callBody").innerHTML = list.length ? tbl(
-    ["时间", "模型", "端点", "结果", "耗时", "输入 / 输出", "账号 / 凭据", "错误 / 诊断"],
+    ["时间 / 来源", "请求 → 实际模型", "结果", "首 Token / 总耗时", "输入 / 输出", "账号 / Key", "请求诊断"],
     list.map((r) => {
-      const acct = callAccount(r);
+      const acct = callAccount(r), outcome = r.outcome || (r.ok ? "ok" : "failed");
+      const tag = outcome === "cancelled" ? '<span class="tag warn">取消</span>' : r.ok ? '<span class="tag ok">成功</span>' : '<span class="tag err">失败</span>';
       return [
-        '<span class="dim">' + esc(new Date(r.ts).toLocaleTimeString("zh-CN")) + "</span>",
-        "<code>" + esc(r.model) + "</code>",
-        '<span class="dim" style="font-size:11.5px">' + esc(r.endpoint || "-") + "</span>",
-        (r.ok ? '<span class="tag ok">OK</span>' : '<span class="tag err">FAIL</span>') + (r.stream ? '<span class="tag">流</span>' : ""),
-        '<span class="num">' + ms(r.latencyMs) + "</span>",
-        '<span class="num dim">' + num(r.prompt_tokens) + " / " + num(r.completion_tokens) + "</span>",
-        '<div style="font-size:12px">' + esc(acct.name) + '</div>' +
-          '<div class="dim" style="font-size:10.5px;max-width:180px;overflow:hidden;text-overflow:ellipsis" title="' +
-          esc(acct.detail) + '">' + esc(acct.detail) + "</div>",
+        '<span class="dim nowrap">' + esc(new Date(r.ts).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })) + '</span><div class="us-call-meta">' + esc({ proxy: "API", probe: "探测", admin: "管理" }[r.source] || "历史") + '</div>',
+        '<code>' + esc(r.resolvedModel || r.model) + '</code>' + (r.requestedModel && r.requestedModel !== (r.resolvedModel || r.model) ? '<div class="us-call-meta">请求：' + esc(r.requestedModel) + ' →</div>' : ''),
+        tag + (r.stream ? '<span class="tag">流</span>' : ''),
+        '<span class="num">' + metricMs(r.ttftMs) + ' / ' + metricMs(r.latencyMs) + '</span>',
+        '<span class="num dim">' + num(r.prompt_tokens) + ' / ' + num(r.completion_tokens) + '</span>' + (!r.usageKnown ? '<div class="us-call-meta">用量未上报</div>' : ''),
+        '<div style="font-size:12px">' + esc(acct.name) + '</div><div class="us-call-meta">' + esc(r.apiKeyLabel || "Key 未采集") + '</div>',
         callErrorCell(r),
       ];
     })
-  ) : empty("没有记录");
-  $$("#callBody [data-diag]").forEach((b) => {
-    b.onclick = () => copy(b.dataset.diag, "诊断信息已复制（不含密钥）");
-  });
+  ) : empty("当前筛选没有调用记录");
+  $$("#callBody details[data-request-id]").forEach((el) => { el.open = openDetails.has(el.dataset.requestId); });
+  $("#callBody").scrollTop = callScrollTop;
 }
 
 /* ---------------- 日志 ---------------- */
@@ -1910,6 +2141,20 @@ function hhmmss(iso) {
   return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
 }
 
+function logExtra(extra) {
+  if (!extra) return "";
+  const one = (v) => {
+    if (v === undefined) return "-";
+    const isText = typeof v === "string";
+    let s = isText ? v : JSON.stringify(v);
+    if (s === undefined) s = String(v);
+    s = s.replace(/\s+/g, " ").trim() || '\"\"';
+    if (isText && /[\s\"]/.test(s)) s = JSON.stringify(s);
+    return s.length > 100 ? s.slice(0, 99) + "…" : s;
+  };
+  return Object.entries(extra).map(([k, v]) => k + "=" + one(v)).join(" ");
+}
+
 function renderLogs() {
   if (!logAuto && renderLogs._done) return;
   const q = ($("#logFilter").value || "").toLowerCase();
@@ -1918,7 +2163,7 @@ function renderLogs() {
   if (q) list = list.filter((l) => (l.msg + " " + l.scope + " " + JSON.stringify(l.extra || {})).toLowerCase().includes(q));
   const box = $("#logBox");
   const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
-  box.textContent = list.map((l) => "[" + hhmmss(l.ts) + "] " + l.level.toUpperCase().padEnd(5) + " " + String(l.scope).padEnd(9) + " " + l.msg + (l.extra ? " " + JSON.stringify(l.extra) : "")).join("\n") || "（无日志）";
+  box.textContent = list.map((l) => "[" + hhmmss(l.ts) + "] " + l.level.toUpperCase().padEnd(5) + " " + String(l.scope).padEnd(9) + " " + l.msg + (l.extra ? " " + logExtra(l.extra) : "")).join("\n") || "（无日志）";
   if (atBottom) box.scrollTop = box.scrollHeight;
   renderLogs._done = true;
 }
@@ -3457,7 +3702,9 @@ function go(p) {
     // 第二块起把大标题降级，避免一页里出现两个并列主标题
     el.classList.toggle("cont", i > 0);
   });
+  $("main").classList.toggle("usage-wide", p === "usage");
   renderAll();
+  if (S && shows("usage")) loadUsage();
   window.scrollTo({ top: 0 });
 }
 window.addEventListener("hashchange", () => go((location.hash || "#overview").slice(1)));
@@ -3488,15 +3735,75 @@ $("#btnUpstream").onclick = async () => {
   } catch (e) { $("#opTip").textContent = "失败: " + e.message; }
 };
 $("#btnUsageReset").onclick = async () => {
-  if (!confirm("确定清空统计与调用记录？")) return;
-  await api("admin/api/usage/reset", { method: "POST", json: {} });
-  toast("统计已重置", "ok"); await poll();
+  if (!confirm("归档当前统计后开始新的累计？历史数据会先保存为备份文件；仅恢复页面筛选请使用用量页的「重置筛选」。")) return;
+  try {
+    await api("admin/api/usage/reset", { method: "POST", json: {} });
+    U = null;
+    toast("历史已归档，开始新的统计", "ok"); await poll();
+  } catch (err) { toast("归档未完成：" + err.message, "err"); }
 };
 $("#btnLogsClear").onclick = async () => {
   await api("admin/api/logs/clear", { method: "POST", json: {} });
   toast("日志已清空", "ok"); await poll();
 };
-$("#usReset").onclick = $("#btnUsageReset").onclick;
+$("#usReset").onclick = () => {
+  Object.assign(usageFilter, { range: "7d", source: "proxy", model: "", accountId: "", apiKeyId: "", outcome: "all", offset: 0 });
+  for (const [id, key] of [["#usRange", "range"], ["#usSource", "source"], ["#usModel", "model"], ["#usAccount", "accountId"], ["#usKey", "apiKeyId"]]) $(id).value = usageFilter[key];
+  callFilter = "all";
+  $("#usFrom").value = ""; $("#usTo").value = "";
+  delete usageFilter.from; delete usageFilter.to;
+  $$("#callFilter button").forEach((b) => b.classList.toggle("on", b.dataset.f === "all"));
+  changeUsageFilters();
+};
+for (const [id, key] of [["#usRange", "range"], ["#usSource", "source"], ["#usModel", "model"], ["#usAccount", "accountId"], ["#usKey", "apiKeyId"]]) {
+  $(id).addEventListener("change", () => { usageFilter[key] = $(id).value; changeUsageFilters(); });
+}
+["#usFrom", "#usTo"].forEach((id) => $(id).addEventListener("change", changeUsageFilters));
+$("#usRefresh").onclick = () => loadUsage();
+$("#usSort").onchange = () => renderUsage();
+let usageResizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(usageResizeTimer);
+  usageResizeTimer = setTimeout(() => { if (U && shows("usage")) renderUsageTrend(U); }, 80);
+});
+$$("#usMetric button").forEach((b) => b.onclick = () => {
+  usageMetric = b.dataset.metric;
+  $$("#usMetric button").forEach((x) => x.classList.toggle("on", x === b));
+  if (U) renderUsageTrend(U);
+});
+$$("#usGroup button").forEach((b) => b.onclick = () => {
+  usageGroup = b.dataset.group;
+  $$("#usGroup button").forEach((x) => x.classList.toggle("on", x === b));
+  $("#usAccounts").hidden = usageGroup !== "accounts"; $("#usKeys").hidden = usageGroup !== "keys";
+});
+$("#usDashboard").addEventListener("click", (event) => {
+  const b = event.target.closest("[data-usage-model], [data-usage-account], [data-usage-key]");
+  if (!b) return;
+  if (b.hasAttribute("data-usage-model")) { usageFilter.model = b.dataset.usageModel; $("#usModel").value = usageFilter.model; }
+  if (b.hasAttribute("data-usage-account")) { usageFilter.accountId = b.dataset.usageAccount; $("#usAccount").value = usageFilter.accountId; }
+  if (b.hasAttribute("data-usage-key")) { usageFilter.apiKeyId = b.dataset.usageKey; $("#usKey").value = usageFilter.apiKeyId; }
+  changeUsageFilters();
+});
+$("#callBody").addEventListener("click", (event) => {
+  const b = event.target.closest("[data-diag]");
+  if (b) copy(b.dataset.diag, "诊断信息已复制（仅含请求元数据）");
+});
+$("#callPageSize").onchange = () => { usageFilter.limit = Number($("#callPageSize").value); usageFilter.offset = 0; loadUsage(); };
+$("#callPrev").onclick = () => { usageFilter.offset = Math.max(0, usageFilter.offset - usageFilter.limit); loadUsage(); };
+$("#callNext").onclick = () => { if (U && usageFilter.offset + usageFilter.limit < U.page.total) { usageFilter.offset += usageFilter.limit; loadUsage(); } };
+$("#usExport").onclick = async () => {
+  const b = $("#usExport"); b.disabled = true; b.textContent = "导出中…";
+  try {
+    const res = await fetch("/admin/api/usage/export.csv?" + usageParams(false), { headers: H() });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || "导出失败"); }
+    const blob = await res.blob(), url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")?.[1] || "usage.csv";
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("已导出 " + (res.headers.get("X-Usage-Records") || "所选") + " 条保留明细" + (res.headers.get("X-Usage-Partial") === "true" ? "（历史覆盖见页面说明）" : ""), "ok");
+  } catch (err) { toast(err.message, "err"); }
+  finally { b.disabled = !U || !U.page.total; b.textContent = "导出 CSV"; }
+};
 
 $("#cpJson").onclick = () => copy(JSON.stringify({ base_url: baseUrl(), api_key: firstKey(), model: S.health.defaultModel }, null, 2), "JSON 已复制");
 $("#cpEnv").onclick = () => copy("OPENAI_BASE_URL=" + baseUrl() + "\nOPENAI_API_KEY=" + firstKey() + "\nOPENAI_MODEL=" + S.health.defaultModel + "\n", ".env 已复制");
@@ -3547,8 +3854,9 @@ $("#aliasAdd").onclick = () => {
 
 $$("#callFilter button").forEach((b) => (b.onclick = () => {
   callFilter = b.dataset.f;
+  usageFilter.outcome = callFilter;
   $$("#callFilter button").forEach((x) => x.classList.toggle("on", x === b));
-  renderCalls();
+  changeUsageFilters();
 }));
 $$("#logLevel button").forEach((b) => (b.onclick = () => {
   logLevel = b.dataset.l;

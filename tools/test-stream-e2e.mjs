@@ -117,6 +117,43 @@ const upstream = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: { code: 'BadRequest', message: 'invalid parameter' } }));
     return;
   }
+  if (mode === 'finish-no-done') {
+    // 完整内容 + finish_reason，然后既不补 [DONE] 也不立刻关连接。
+    // 模拟 DSH / pi-ai 这类客户端"收完就挂断"：代理先看到 socket 关闭，
+    // 但这条回复其实是完整的，必须按成功记账（不能记成断流/客户端跑路）。
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+    sse(res, {
+      id: 'chatcmpl-finish',
+      object: 'chat.completion.chunk',
+      model: body.model || 'model-a',
+      choices: [{ index: 0, delta: { role: 'assistant', content: '' }, finish_reason: null }],
+    });
+    sse(res, {
+      id: 'chatcmpl-finish',
+      object: 'chat.completion.chunk',
+      model: body.model || 'model-a',
+      choices: [{ index: 0, delta: { content: 'Hello' }, finish_reason: null }],
+    });
+    sse(res, {
+      id: 'chatcmpl-finish',
+      object: 'chat.completion.chunk',
+      model: body.model || 'model-a',
+      choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 10, completion_tokens: 1, total_tokens: 11 },
+    });
+    setTimeout(() => {
+      try {
+        res.end();
+      } catch {
+        /* client gone */
+      }
+    }, 1500);
+    return;
+  }
   if (mode === 'slow') {
     // 先吐一个 chunk，让代理把 SSE 头发出去，再挂住等客户端 abort。
     res.writeHead(200, {
@@ -292,6 +329,38 @@ try {
     check('JSON 正文', r.text.includes('"object":"chat.completion"'), true);
     check('X-Request-Id 存在', !!r.res.headers.get('x-request-id'), true);
     check('Server-Timing 有 total', /total;dur=\d+/.test(r.res.headers.get('server-timing') || ''), true);
+  }
+
+  console.log('\n【6】客户端收完 finish_reason 就挂断：按正常请求记账');
+  {
+    mode = 'finish-no-done';
+    const ac = new AbortController();
+    const res = await fetch(`${base}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer sk-test', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'model-a', stream: true, messages: [{ role: 'user', content: 'finish then leave' }] }),
+      signal: ac.signal,
+    });
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    let sawFinish = false;
+    while (!sawFinish) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      if (buf.includes('"finish_reason":"stop"')) sawFinish = true;
+    }
+    check('确实收到了 finish_reason', sawFinish, true);
+    // 收完最后一段就挂断，不等 [DONE] —— 代理那边会看到 socket 关闭。
+    ac.abort();
+    await reader.cancel().catch(() => {});
+    await new Promise((r) => setTimeout(r, 400));
+    const last = usage.snapshot().recent[0];
+    check('这条请求记成成功', last?.ok, true);
+    check('补记了 completion_tokens', last?.completion_tokens, 1);
+    check('记在 model-a 上', last?.model, 'model-a');
+    mode = 'normal';
   }
 
   check('假上游确实被调用', upstreamRequests >= 3, true);

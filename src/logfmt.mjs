@@ -94,6 +94,7 @@ export function cleanIp(ip) {
  * @param {string} [f.src]        客户端 IP
  * @param {string} [f.ua]         客户端 User-Agent
  * @param {number} [f.attempt]    第几次尝试（>1 时才追加 `try=N`）
+ * @param {string} [f.note]       补充标记（有值才追加 `note=...`）
  * @returns {string}
  */
 export function formatChatLine(f = {}) {
@@ -126,6 +127,11 @@ export function formatChatLine(f = {}) {
 
   const total = humanMs(f.totalMs);
   seg.push(`total=${total === null ? '-' : total}`);
+
+  // 极少见的补充说明（目前只有 `client-closed-after-finish`：客户端收完最后一段
+  // 就挂断，没等 usage/[DONE]，但回复本身是完整的）。正常请求不出现，整行格式不变。
+  const note = String(f.note ?? '').trim();
+  if (note) seg.push(`note=${note}`);
 
   // 只有重试过才显示，正常请求保持干净
   const attempt = Number(f.attempt);
