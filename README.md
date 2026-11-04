@@ -210,53 +210,388 @@ cd officeace2api
 | `install-autostart.cmd` | 装成开机自启 |
 | `remove-autostart.cmd` | 卸载自启 |
 
-### 容器部署（Docker / 服务器）
-
-镜像由 GitHub Actions 自动构建并推到 GitHub Container Registry（`.github/workflows/docker.yml`），
-支持 `linux/amd64` 与 `linux/arm64`：
-
-```bash
-docker pull ghcr.io/ssdxftx/officeace2api:latest
-```
-
-仓库自带的 `docker-compose.yml` 已经配好目录挂载和环境变量，推荐直接用它：
-
-```bash
-# 生成两个真正的密钥（别用默认的 sk-officeace）
-export OFFICEACE2API_ADMIN_TOKEN=$(openssl rand -base64 32)
-export OFFICEACE2API_KEYS=sk-$(openssl rand -hex 24)
-
-docker compose up -d
-docker compose logs -f
-```
-
-`docker compose up` 会在当前目录建 `data/` 和 `logs/` 并挂进容器，账号、用量、配置都在
-`data/` 里，删容器不丢。默认只把端口绑在 `127.0.0.1`，对外提供服务请在前面套 Nginx/Caddy 加 TLS。
-
-镜像里预置了 `OFFICEACE2API_HOST=0.0.0.0`、`OFFICEACE2API_PORT=7864`、
-`OFFICEACE2API_CONFIG=/app/data/config.json`，可用环境变量覆盖的有：
-
-| 环境变量 | 作用 |
-|---|---|
-| `OFFICEACE2API_HOST` / `OFFICEACE2API_PORT` | 监听地址与端口 |
-| `OFFICEACE2API_KEYS` | API Key 列表（逗号分隔） |
-| `OFFICEACE2API_ADMIN_TOKEN` | 固定面板口令；设了就不会再自动生成写回 config.json |
-| `OFFICEACE2API_BASE_URL` / `OFFICEACE2API_AUTHORIZATION` | 手工上游（通用 OpenAI 反代模式） |
-| `OFFICEACE2API_CONFIG` | 配置文件路径，默认 `<项目根>/config.json` |
-
-容器里能做什么、不能做什么：
-
-- **能用**：面板自助登录（PKCE + 云端轮询，不需要本地回调端口）、导入导出账号包、手工上游。
-- **不能用**：自动发现本机 OfficeAce 桌面端、DPAPI 解密凭据（这两条是 Windows 专属），
-  以及 `start.cmd` / 看门狗那套自启脚本；容器重启策略交给 `restart: unless-stopped`。
-- **只跑一个副本**：`data/` 里是单实例状态（实例锁、单次使用的 refresh_token 链），
-  横向扩容会让两边互相覆盖，别开多个 replica。
-
-健康检查探的是 `/healthz`（免鉴权），账号没配好时返回 `status: degraded` 而不是非 200。
+> 容器 / 服务器部署（镜像拉取、Docker Compose、HTTPS、备份迁移、排障）见下面
+> 「四、容器部署（Docker / 服务器）」。Windows 上的后台常驻继续用本节这套脚本。
 
 ---
 
-## 四、怎么加账号
+## 四、容器部署（Docker / 服务器）
+
+项目本体是纯 Node.js、零 npm 依赖，镜像体积不大，适合放在 Linux 服务器上长期运行。
+镜像由 GitHub Actions 在每次推送 `main` 和 `v*` tag 时自动构建，发布到 GitHub Container Registry
+（工作流见 `.github/workflows/docker.yml`）：
+
+| 标签 | 对应版本 |
+|---|---|
+| `ghcr.io/ssdxftx/officeace2api:latest` | 默认分支最新构建 |
+| `ghcr.io/ssdxftx/officeace2api:main` | `main` 分支最新构建 |
+| `ghcr.io/ssdxftx/officeace2api:sha-<7位提交>` | 某一次提交 |
+| `ghcr.io/ssdxftx/officeace2api:1.2.3` | `v1.2.3` tag（同时带 `1.2`、`1`） |
+
+镜像同时发布 `linux/amd64` 和 `linux/arm64`，普通云主机、ARM 服务器都可以直接拉。
+
+### 4.1 能力边界
+
+| 能力 | 容器里 |
+|---|---|
+| 面板自助登录（PKCE + 云端轮询） | 可用 |
+| 导入 / 导出账号包 | 可用 |
+| 手工上游（任意 OpenAI 兼容服务） | 可用 |
+| 自动发现本机 OfficeAce 桌面端 | 不可用（Windows 专属） |
+| DPAPI 解密凭据 | 不可用（Windows 专属） |
+| `start.cmd` / 计划任务 / 看门狗 | 不可用，改用容器重启策略 |
+
+`data/` 里是单实例状态：实例锁、一次性 refresh_token 链、签到记录、用量统计。一个数据目录只跑一个容器，
+横向扩容会让两个实例互相覆盖。`docker compose` 默认就是一个副本，保持这个设置即可。
+
+### 4.2 准备工作
+
+服务器要求：
+
+- Linux，`amd64` 或 `arm64`
+- Docker 20.10 以上，Docker Compose v2（使用 `docker compose` 子命令）
+- 出站网络：访问华为云 OAuth / 模型网关，或你自己的上游
+- 一个域名（可选，用于 HTTPS）
+
+先生成两个密钥并记下来，面板和客户端都会用到：
+
+```bash
+# 面板口令，打开 /admin 时用
+export OFFICEACE2API_ADMIN_TOKEN=$(openssl rand -base64 32)
+
+# 客户端调用 /v1 时的 API Key，可以写多个，用逗号分隔
+export OFFICEACE2API_KEYS=sk-$(openssl rand -hex 24)
+
+echo "$OFFICEACE2API_ADMIN_TOKEN"
+echo "$OFFICEACE2API_KEYS"
+```
+
+### 4.3 方式一：docker compose（推荐）
+
+1. 建目录并进入：
+
+```bash
+mkdir -p /opt/officeace2api
+cd /opt/officeace2api
+```
+
+2. 取仓库里的 `docker-compose.yml`：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ssdxftx/officeace2api/main/docker-compose.yml -o docker-compose.yml
+```
+
+3. 写一个 `.env`，让 compose 自动读取密钥：
+
+```bash
+cat > .env <<'EOF'
+OFFICEACE2API_ADMIN_TOKEN=替换成刚生成的口令
+OFFICEACE2API_KEYS=替换成刚生成的 API Key
+EOF
+chmod 600 .env
+```
+
+4. 启动并观察日志：
+
+```bash
+docker compose up -d
+docker compose ps
+docker compose logs -f --tail=100
+```
+
+5. 从日志里取面板地址：
+
+```bash
+docker compose logs officeace2api | grep '面板口令'
+```
+
+日志里会出现类似 `面板口令 xxxx（在 config.json 的 admin.token，可改）` 的一行。
+
+默认 compose 把端口绑在 `127.0.0.1`，两种访问方式：
+
+- 本机建 SSH 隧道：`ssh -L 7864:127.0.0.1:7864 用户@服务器`，然后打开 `http://127.0.0.1:7864/admin?token=你的口令`
+- 把 compose 里 `ports` 改成 `"7864:7864"` 再 `docker compose up -d`，然后打开 `http://服务器IP:7864/admin?token=你的口令`。
+  直连公网前先看 4.9 和 4.10 的密钥与 TLS 要求
+
+`docker compose up` 会在当前目录创建 `data/` 和 `logs/` 并挂进容器，账号、用量、配置都落在
+`data/`，删除容器后重新 `up` 数据仍在。
+
+### 4.4 方式二：docker run
+
+不使用 compose 时，先建好目录，再执行：
+
+```bash
+mkdir -p /opt/officeace2api/data /opt/officeace2api/logs
+cd /opt/officeace2api
+
+docker run -d \
+  --name officeace2api \
+  --restart unless-stopped \
+  -p 127.0.0.1:7864:7864 \
+  -e OFFICEACE2API_ADMIN_TOKEN="$OFFICEACE2API_ADMIN_TOKEN" \
+  -e OFFICEACE2API_KEYS="$OFFICEACE2API_KEYS" \
+  -e TZ=Asia/Shanghai \
+  -v "$PWD/data:/app/data" \
+  -v "$PWD/logs:/app/logs" \
+  ghcr.io/ssdxftx/officeace2api:latest
+```
+
+`-p 127.0.0.1:7864:7864` 把端口只绑在本机，公网访问交给反向代理（见 4.9）。
+需要直接暴露时改成 `-p 7864:7864`，并把两个密钥都换成足够长的随机值。
+
+常用管理命令：
+
+```bash
+docker ps --filter name=officeace2api
+docker logs -f --tail=100 officeace2api
+docker restart officeace2api
+docker stop officeace2api
+```
+
+### 4.5 方式三：本地构建镜像
+
+仓库根目录有 `Dockerfile`，改完代码可以直接构建：
+
+```bash
+git clone https://github.com/ssdxftx/officeace2api.git
+cd officeace2api
+
+docker build -t officeace2api:local .
+
+docker run -d \
+  --name officeace2api \
+  --restart unless-stopped \
+  -p 127.0.0.1:7864:7864 \
+  -e OFFICEACE2API_ADMIN_TOKEN="$OFFICEACE2API_ADMIN_TOKEN" \
+  -e OFFICEACE2API_KEYS="$OFFICEACE2API_KEYS" \
+  -v "$PWD/data:/app/data" \
+  -v "$PWD/logs:/app/logs" \
+  officeace2api:local
+```
+
+构建多架构镜像（需要 buildx 和可推送的镜像仓库）：
+
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t your-registry/officeace2api:dev \
+  --push .
+```
+
+### 4.6 目录、配置与持久化
+
+容器里固定使用两个目录：
+
+| 容器路径 | 内容 | 是否必须挂载 |
+|---|---|---|
+| `/app/data` | 配置、账号、用量、积分历史、实例锁 | 必须 |
+| `/app/logs` | `server.log`、`server.err.log` | 建议 |
+
+`OFFICEACE2API_CONFIG` 默认指向 `/app/data/config.json`，配置随账号一起备份即可。
+首次启动时如果没有配置文件，会自动生成一份；没有指定 `OFFICEACE2API_ADMIN_TOKEN` 时会自动生成面板口令。
+
+容器以 root 启动入口脚本，把 `data/`、`logs/` 的属主改成 `node`，再用 `node` 用户运行服务。
+宿主机目录由 Docker 创建成 root 所有也能正常工作；重启容器会自动修正属主。
+
+支持的环境变量：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `OFFICEACE2API_HOST` | `0.0.0.0` | 监听地址 |
+| `OFFICEACE2API_PORT` | `7864` | 监听端口，改动后同步 compose 的端口映射 |
+| `OFFICEACE2API_KEYS` | `sk-officeace` | 客户端 API Key，逗号分隔 |
+| `OFFICEACE2API_ADMIN_TOKEN` | 首次启动自动生成 | 面板口令 |
+| `OFFICEACE2API_CONFIG` | `/app/data/config.json` | 配置文件路径 |
+| `OFFICEACE2API_BASE_URL` | 空 | 手工上游地址，用于通用反代 |
+| `OFFICEACE2API_AUTHORIZATION` | 空 | 手工上游鉴权头 |
+| `TZ` | 容器默认 UTC | 日志与统计使用的时区，建议 `Asia/Shanghai` |
+
+面板里保存的设置会写回 `/app/data/config.json`，重启后仍然生效。环境变量优先级更高，
+每次启动都会覆盖同名配置项。
+
+### 4.7 接入客户端
+
+面板起来后，把下面的值填进 Cherry Studio、NextChat、LobeChat、Cline、Cursor、OpenAI SDK 等客户端：
+
+| 项 | 值 |
+|---|---|
+| Base URL | 反向代理后填 `https://ai.example.com/v1`；直连填 `http://服务器IP:7864/v1`（需要把 compose 端口改成 `7864:7864`） |
+| API Key | `OFFICEACE2API_KEYS` 里的任意一个 |
+| Model | 面板「接入信息」一键复制，或访问 `/v1/models` |
+
+号池为空时 `/v1/models` 返回空列表，先按 4.8 加账号。
+
+### 4.8 加账号
+
+容器里推荐用面板自助登录：
+
+1. 打开面板：默认绑定 `127.0.0.1` 时用 SSH 隧道访问；配好域名后直接访问 `https://ai.example.com/admin?token=你的口令`
+2. 进入「账号池」
+3. 点「导入账号」，再点「换个账号登录」
+4. 在浏览器里完成华为云登录，面板会自动轮询并把账号收进号池
+
+也可以：
+
+- 「导入账号」里直接粘贴 `baseUrl` 和 `Authorization`
+- 「导入账号」里选择「从文件导入」，导入另一台机器导出的账号包
+- 编辑 `/app/data/config.json`，填 `upstream.baseUrl` 和 `upstream.authorization`，然后重启容器
+
+通用 OpenAI 反代示例（使用自己的上游，不需要华为账号）：
+
+```json
+{
+  "upstream": {
+    "autoDiscover": false,
+    "baseUrl": "https://你的上游/v1",
+    "authorization": "Bearer sk-xxxx"
+  }
+}
+```
+
+对应的环境变量写法：
+
+```bash
+docker run -d \
+  --name officeace2api \
+  --restart unless-stopped \
+  -p 127.0.0.1:7864:7864 \
+  -e OFFICEACE2API_ADMIN_TOKEN="$OFFICEACE2API_ADMIN_TOKEN" \
+  -e OFFICEACE2API_KEYS="$OFFICEACE2API_KEYS" \
+  -e OFFICEACE2API_BASE_URL=https://你的上游/v1 \
+  -e OFFICEACE2API_AUTHORIZATION="Bearer sk-xxxx" \
+  -v "$PWD/data:/app/data" \
+  -v "$PWD/logs:/app/logs" \
+  ghcr.io/ssdxftx/officeace2api:latest
+```
+
+### 4.9 反向代理与 HTTPS
+
+公网部署建议把 7864 只绑在 `127.0.0.1`，由 Nginx 或 Caddy 终止 TLS。
+
+Nginx 示例（流式响应需要关闭缓冲）：
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name ai.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/ai.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ai.example.com/privkey.pem;
+
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://127.0.0.1:7864;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # SSE：关闭缓冲并拉长超时
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+}
+
+server {
+    listen 80;
+    server_name ai.example.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+Caddy 示例（自动申请证书）：
+
+```caddyfile
+ai.example.com {
+    reverse_proxy 127.0.0.1:7864 {
+        flush_interval -1
+    }
+}
+```
+
+同机反向代理会把请求来源识别为 `127.0.0.1`，`/healthz` 因此会附带 `root` 和 `pid` 字段。
+只在本机访问 `/healthz`，或在代理层限制它，可以避免这两个信息出现在公网。
+
+### 4.10 备份、迁移与升级
+
+账号和配置都在 `data/`，备份它即可：
+
+```bash
+docker compose stop
+tar -czf officeace2api-data-$(date +%F).tar.gz data/
+docker compose start
+```
+
+`data/` 里是明文凭据：`refresh-state.json` 含临时 AK/SK，`oauth-accounts.json` 含 refreshToken
+和 DPoP 私钥，`config.json` 含面板口令和 API Key。备份包按密钥对待，存放在受控位置。
+
+迁移到新服务器：把整个 `data/` 拷过去，用同一个 `OFFICEACE2API_ADMIN_TOKEN` 启动。
+refresh_token 是一次性的，同一份 `data/` 在两台机器上同时运行会互相烧掉授权链，
+迁移时先把旧容器停掉。
+
+升级：
+
+```bash
+cd /opt/officeace2api
+docker compose pull
+docker compose up -d
+docker compose ps
+curl -s http://127.0.0.1:7864/healthz
+```
+
+回滚到某个提交对应的镜像：
+
+```bash
+docker pull ghcr.io/ssdxftx/officeace2api:sha-68b3724
+```
+
+把 compose 里的 `image` 改成这个 tag，再执行 `docker compose up -d`。
+生产环境建议固定具体 tag，避免 `latest` 随构建漂移。
+
+### 4.11 健康检查与排障
+
+```bash
+# 容器状态和健康检查结果
+docker compose ps
+
+# 实时日志
+docker compose logs -f --tail=200
+
+# 健康接口
+curl -s http://127.0.0.1:7864/healthz | python3 -m json.tool
+```
+
+`/healthz` 的 `status` 有两种取值：
+
+- `ok`：至少有一条可用凭据
+- `degraded`：服务本身正常，号池里还没有可用账号；加完账号后会变成 `ok`
+
+`docker ps` 里健康检查探的也是这个接口，返回 HTTP 200 即视为健康。
+
+常见问题：
+
+| 现象 | 原因与处理 |
+|---|---|
+| 浏览器 401 | 面板地址缺少 `?token=`，或口令与 `data/config.json` 的 `admin.token` 不一致 |
+| `/v1/models` 返回 401 | 客户端没带 `Authorization: Bearer <OFFICEACE2API_KEYS>` |
+| `/v1/models` 返回空列表 | 号池为空，按 4.8 加账号 |
+| 容器反复重启 | `docker compose logs` 查看端口占用或配置解析错误 |
+| 写文件权限错误 | 确认挂载的是目录；`docker compose down && docker compose up -d` 会重新修正属主 |
+| 日志时间不是本地时间 | 加环境变量 `TZ=Asia/Shanghai` |
+| 面板能打开但登录账号失败 | 容器需要出站访问华为云，检查 DNS 和防火墙 |
+| 流式响应卡住 | 反向代理没关缓冲，按 4.9 加 `proxy_buffering off` |
+| 拉取镜像 403 | GHCR 包权限被改成私有；在 GitHub 包设置里改回 public，或 `docker login ghcr.io` |
+
+容器模式与 Windows 模式共用同一套 `data/` 格式，把 `data/` 搬过去即可继续使用。
+DPAPI 加密的凭据文件在 Linux 上解不开，先在旧机器面板「导出凭证」，再到容器里导入。
+
+---
+
+## 五、怎么加账号
 
 五种方式，日常用第 ① 种就够；换电脑看第 ② 种。
 
@@ -312,7 +647,7 @@ DPoP 私钥、续期链（含已作废 token 的黑名单）、别名、启停�
 
 ---
 
-## 五、必须装 OfficeAce 客户端吗？
+## 六、必须装 OfficeAce 客户端吗？
 
 **加账号不需要。** 只有两件事需要桌面端：自动抠本机已有账号的凭据、以及老的「一键授权」入口
 （`/admin/api/auth/*`，注册流水线的自动授权也复用它）。
@@ -356,7 +691,7 @@ DPoP 私钥、续期链（含已作废 token 的黑名单）、别名、启停�
 
 ---
 
-## 六、常见问题
+## 七、常见问题
 
 **Q：浏览器打不开，`ERR_CONNECTION_REFUSED`？**
 用 `127.0.0.1:7864`，别用 `localhost:7864`。服务只绑 IPv4，浏览器优先试 IPv6 会直接拒。
@@ -441,7 +776,7 @@ abort 上游请求带出来的原因 —— 常见于客户端超时重试、用
 
 ---
 
-## 七、目录结构
+## 八、目录结构
 
 ```
 officeace2api/
@@ -480,7 +815,7 @@ officeace2api/
 
 ---
 
-## 八、更多
+## 九、更多
 
 - **[Releases](https://github.com/Q-shuang-dot/officeace2api/releases)** —— 每个版本自动附带
   `officeace2api-vX.Y.Z.zip` + `SHA256SUMS.txt`；解压后直接跑，不用 `git clone`。
