@@ -225,7 +225,7 @@ Images are built and pushed to the GitHub Container Registry by GitHub Actions
 (`.github/workflows/docker.yml`) for `linux/amd64` and `linux/arm64`:
 
 ```bash
-docker pull ghcr.io/q-shuang-dot/officeace2api:latest
+docker pull ghcr.io/ssdxftx/officeace2api:latest
 ```
 
 The bundled `docker-compose.yml` already mounts the right directories and sets the env vars:

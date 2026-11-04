@@ -216,7 +216,7 @@ cd officeace2api
 支持 `linux/amd64` 与 `linux/arm64`：
 
 ```bash
-docker pull ghcr.io/q-shuang-dot/officeace2api:latest
+docker pull ghcr.io/ssdxftx/officeace2api:latest
 ```
 
 仓库自带的 `docker-compose.yml` 已经配好目录挂载和环境变量，推荐直接用它：
